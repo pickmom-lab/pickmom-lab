@@ -118,11 +118,11 @@ export default function Home() {
     setView("topicDetail");
   };
 
-  const startWriting = (title: string) => {
+  const startWriting = (title: string, keyword = "") => {
     setWritingTitle(title);
     setWritingStep(1);
     setWritingType("직접 경험 후기");
-    setWritingTargetKeyword("");
+    setWritingTargetKeyword(keyword);
     setWritingDocumentCount(null);
     setWritingRelatedKeywords([]);
     setWritingKeywordError("");
@@ -504,7 +504,7 @@ export default function Home() {
           )}
 
           {/* 키워드 발굴 */}
-          {view === "competitor" && <CompetitorAnalysis />}
+          {view === "competitor" && <CompetitorAnalysis onUseKeyword={(keyword) => startWriting("", keyword)} /> }
 
           {/* 글쓰기 */}
           {view === "writing" && (
