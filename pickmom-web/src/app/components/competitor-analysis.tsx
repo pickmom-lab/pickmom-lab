@@ -43,7 +43,7 @@ const dateLabel = (value: string) => {
     : value;
 };
 
-export default function CompetitorAnalysis() {
+export default function CompetitorAnalysis({ onUseKeyword }: { onUseKeyword?: (keyword: string) => void }) {
   const [tab, setTab] = useState<"discover" | "analyze" | "templates">("discover");
   const [keyword, setKeyword] = useState("서울 아이와 가볼 만한 곳");
   const [trends, setTrends] = useState<TrendResult[]>([]);
@@ -273,6 +273,15 @@ export default function CompetitorAnalysis() {
             <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-[#A49AA9]">
               <span>{source || "데이터 출처 대기"}</span>
               {collectedAt && <span>조회 시각 {new Date(collectedAt).toLocaleString("ko-KR")}</span>}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F8F5F9] p-4">
+              <div>
+                <p className="text-xs font-semibold text-[#665174]">분석한 키워드로 글쓰기 시작</p>
+                <p className="mt-1 text-[10px] text-[#918995]">키워드를 글쓰기 화면에 자동으로 전달합니다.</p>
+              </div>
+              <button onClick={() => onUseKeyword?.(keyword.trim())} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-4 py-3 text-xs font-semibold text-white disabled:opacity-40">
+                이 키워드로 글쓰기 →
+              </button>
             </div>
           </div>
 
