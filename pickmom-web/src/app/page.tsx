@@ -512,11 +512,11 @@ export default function Home() {
               <div className="mb-7 rounded-2xl border border-[#ECE8EA] bg-white p-5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-[#665174]">CONTENT CREATION</span>
-                  <span className="text-xs text-[#A49AA9]">STEP {writingStep} / 5</span>
+                  <span className="text-xs text-[#A49AA9]">STEP {writingStep} / 6</span>
                 </div>
 
                 <div className="mt-4 flex gap-2">
-                  {[1, 2, 3, 4, 5].map((step) => (
+                  {[1, 2, 3, 4, 5, 6].map((step) => (
                     <div
                       key={step}
                       className={`h-1.5 flex-1 rounded-full ${
@@ -529,17 +529,19 @@ export default function Home() {
                 <h2 className="mt-5 font-semibold">
                   {writingStep === 1 && "먼저 검색 키워드를 정해 주세요."}
                   {writingStep === 2 && "어떤 방향으로 글을 쓸까요?"}
-                  {writingStep === 3 && "나의 경험과 사진을 추가해 주세요."}
-                  {writingStep === 4 && "조사한 정보와 추가 메모를 입력해 주세요."}
-                  {writingStep === 5 && "작성 내용을 확인해 주세요."}
+                  {writingStep === 3 && "검색 키워드와 글 방향에 맞춰 제목을 정해 주세요."}
+                  {writingStep === 4 && "나의 경험과 사진을 추가해 주세요."}
+                  {writingStep === 5 && "조사한 정보와 추가 메모를 입력해 주세요."}
+                  {writingStep === 6 && "작성 내용을 확인해 주세요."}
                 </h2>
 
                 <p className="mt-2 text-xs text-[#918995]">
                   {writingStep === 1 && "실제로 검색되는 단어를 입력하고 문서 수와 함께 등장하는 표현을 확인합니다."}
                   {writingStep === 2 && "검색 의도에 맞는 글의 유형을 하나 선택해 주세요."}
-                  {writingStep === 3 && "기억나는 경험을 편하게 적고 사진을 첨부해 주세요."}
-                  {writingStep === 4 && "영업시간, 주차, 가격 등 조사한 정보를 자유롭게 붙여 넣으세요."}
-                  {writingStep === 5 && "선택한 키워드와 글 방향, 입력한 자료를 확인해 주세요."}
+                  {writingStep === 3 && "제목 예시를 참고해 직접 수정하거나 원하는 제목을 입력하세요."}
+                  {writingStep === 4 && "기억나는 경험을 편하게 적고 사진을 첨부해 주세요."}
+                  {writingStep === 5 && "영업시간, 주차, 가격 등 조사한 정보를 자유롭게 붙여 넣으세요."}
+                  {writingStep === 6 && "선택한 키워드와 글 방향, 입력한 자료를 확인해 주세요."}
                 </p>
               </div>
 
@@ -593,6 +595,32 @@ export default function Home() {
                     ))}
                   </div>
                   <p className="mt-5 text-xs font-medium text-[#665174]">다음: 제목 만들기 →</p>
+                </div>
+              )}
+
+              {/* STEP 3. 제목 만들기 */}
+              {writingStep === 3 && (
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 sm:p-7">
+                  <h3 className="font-semibold">제목 만들기</h3>
+                  <p className="mt-2 text-xs leading-6 text-[#918995]">선택한 키워드와 글 방향을 반영한 제목 구조예요. 검색 상위 노출을 보장하는 제목은 아니며, 실제 내용에 맞게 수정해 주세요.</p>
+                  <div className="mt-4 rounded-xl bg-[#F8F5F9] p-4">
+                    <p className="text-[10px] text-[#A49AA9]">메인 키워드 · {writingTargetKeyword || "키워드 미선택"}</p>
+                    <p className="mt-1 text-xs font-semibold text-[#665174]">글 방향 · {writingType}</p>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {[
+                      `${writingTargetKeyword} 총정리｜알아두면 좋은 방법과 팁`,
+                      `${writingTargetKeyword} 직접 경험한 솔직 후기`,
+                      `${writingTargetKeyword} 비교｜선택 기준과 장단점`,
+                      `${writingTargetKeyword} 궁금증 해결｜자주 묻는 질문`,
+                    ].map((candidate) => (
+                      <button key={candidate} onClick={() => setWritingTitle(candidate)} className={`w-full rounded-xl border p-3 text-left text-xs leading-5 ${writingTitle === candidate ? "border-[#8D789C] bg-[#F7F3F9] text-[#665174]" : "border-[#ECE8EA] text-[#716777]"}`}>
+                        {candidate}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="mt-5 block text-xs font-semibold text-[#665174]">최종 제목</label>
+                  <input value={writingTitle} onChange={(e) => setWritingTitle(e.target.value)} placeholder="제목을 직접 입력하거나 위 예시를 선택하세요." className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
                 </div>
               )}
 
@@ -749,12 +777,12 @@ export default function Home() {
                   </button>
                 )}
 
-                {writingStep < 5 ? (
+                {writingStep < 6 ? (
                   <button
                     onClick={() => setWritingStep(writingStep + 1)}
                     className="flex-1 rounded-xl bg-[#665174] py-4 text-sm font-semibold text-white"
                   >
-                    다음 단계 →
+                    {writingStep === 2 ? "다음: 제목 만들기 →" : writingStep === 3 ? "다음: 경험과 사진 입력 →" : "다음 단계 →"}
                   </button>
                 ) : (
                   <button
