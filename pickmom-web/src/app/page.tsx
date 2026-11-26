@@ -146,9 +146,9 @@ export default function Home() {
   const savePost = (status: Status = "원고 작성") => {
     const title = draftInput.topic.trim() || draftInput.keyword.trim() || "제목 미정";
     if (editingId) {
-      setPosts((old) => old.map((p) => p.id === editingId ? { ...p, title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, draft, status } : p));
+      setPosts((old) => old.map((p) => p.id === editingId ? { ...p, title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: scheduleDate, draft, status } : p));
     } else {
-      setPosts((old) => [{ id: Date.now(), title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: dateKey(new Date()), status, draft }, ...old]);
+      setPosts((old) => [{ id: Date.now(), title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: scheduleDate, status, draft }, ...old]);
     }
     setPage("calendar");
   };
@@ -251,7 +251,7 @@ export default function Home() {
                   <label className="text-xs text-[#817787]">콘텐츠 분야<select value={draftInput.category} onChange={(e) => setDraftInput({ ...draftInput, category: e.target.value as Category })} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D]">{categories.map((c) => <option key={c}>{c}</option>)}</select></label>
                   <label className="text-xs text-[#817787]">글의 목적<select value={draftInput.purpose} onChange={(e) => setDraftInput({ ...draftInput, purpose: e.target.value as Purpose })} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D]">{purposes.map((p) => <option key={p}>{p}</option>)}</select></label>
                   <label className="text-xs text-[#817787] sm:col-span-2">글 주제 / 임시 제목<input value={draftInput.topic} onChange={(e) => setDraftInput({ ...draftInput, topic: e.target.value })} placeholder="예: 고터에서 혼밥하기 좋은 식당 후기" className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D] outline-none focus:border-[#9B82AC]" /></label>
-                  <label className="text-xs text-[#817787] sm:col-span-2">핵심 키워드<input value={draftInput.keyword} onChange={(e) => setDraftInput({ ...draftInput, keyword: e.target.value })} placeholder="예: 고속터미널 혼밥 맛집" className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D] outline-none focus:border-[#9B82AC]" /></label>
+                  <label className="text-xs text-[#817787] sm:col-span-2">핵심 키워드<input value={draftInput.keyword} onChange={(e) => setDraftInput({ ...draftInput, keyword: e.target.value })} placeholder="예: 고속터미널 혼밥 맛집" className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D] outline-none focus:border-[#9B82AC]" /></label>\n                  <label className="text-xs text-[#817787]">예정 발행일<input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D]" /></label>
                 </div>
               </div>
 
