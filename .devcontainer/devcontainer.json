@@ -3,7 +3,8 @@
   "portsAttributes": {
     "3000": {
       "label": "PICKMOM LAB",
-      "onAutoForward": "openBrowser"
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
     }
   }
-}
+}git status
