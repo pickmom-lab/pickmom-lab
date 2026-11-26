@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
         bloggerlink: string;
         postdate: string;
       }) => ({
-        title: item.title,
+        title: item.title.replace(/<[^>]*>/g, ""),
         link: item.link,
-        description: item.description,
+        description: item.description.replace(/<[^>]*>/g, ""),
         bloggerName: item.bloggername,
         bloggerLink: item.bloggerlink,
         postDate: item.postdate,
