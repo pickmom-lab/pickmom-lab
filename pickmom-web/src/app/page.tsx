@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import CompetitorAnalysis from "./components/competitor-analysis";
 
 const menus = [
   { name: "Home", icon: "⌂" },
@@ -9,6 +10,7 @@ const menus = [
   { name: "시즌 상품 추천", icon: "◇" },
   { name: "릴스 · 클립 만들기", icon: "▷" },
   { name: "템플릿 관리", icon: "▤" },
+  { name: "경쟁 블로그 분석", icon: "⌕" },
 ];
 
 const topics = [
@@ -97,9 +99,11 @@ export default function Home() {
         ? "home"
         : name === "시즌 상품 추천"
           ? "products"
-          : name === "새 글 만들기"
+           : name === "새 글 만들기"
             ? "writing"
-            : "placeholder"
+            : name === "경쟁 블로그 분석"
+              ? "competitor"
+              : "placeholder"
     );
     setMoreOpen(false);
   };
@@ -176,6 +180,7 @@ export default function Home() {
                     : view === "topicDetail" ? "주제 상세 분석"
                     : view === "products" ? "인기 상품 전체보기"
                     : view === "productDetail" ? "상품 상세"
+                    : view === "competitor" ? "경쟁 블로그 분석"
                     : activeMenu}
                 </h1>
                 <p className="mt-2 text-xs text-[#918995] sm:text-sm">
@@ -445,6 +450,9 @@ export default function Home() {
               </div>
             </section>
           )}
+
+          {/* 경쟁 블로그 분석 */}
+          {view === "competitor" && <CompetitorAnalysis />}
 
           {/* 글쓰기 */}
           {view === "writing" && (
@@ -741,6 +749,12 @@ export default function Home() {
               className="rounded-xl bg-[#F8F5F9] p-3 text-xs text-[#665174]"
             >
               ▤ 템플릿 관리
+            </button>
+            <button
+              onClick={() => goMenu("경쟁 블로그 분석")}
+              className="rounded-xl bg-[#F8F5F9] p-3 text-xs text-[#665174]"
+            >
+              ⌕ 경쟁 블로그 분석
             </button>
           </div>
         )}
