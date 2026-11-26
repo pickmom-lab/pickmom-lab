@@ -40,10 +40,10 @@ export async function GET(request: NextRequest) {
   });
 
   try {
-    const response = await fetch(`https://openapi.naver.com/v1/search/blog.json?${params.toString()}`, {
+    const response = await fetch(`https://naverapihub.apigw.ntruss.com/search/v1/blog?${params.toString()}`, {
       headers: {
-        "X-Naver-Client-Id": clientId,
-        "X-Naver-Client-Secret": clientSecret,
+        "X-NCP-APIGW-API-KEY-ID": clientId,
+        "X-NCP-APIGW-API-KEY": clientSecret,
       },
       cache: "no-store",
     });
