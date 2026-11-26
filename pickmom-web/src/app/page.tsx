@@ -17,6 +17,7 @@ type Post = {
   status: Status;
   draft: string;
   url?: string;
+  photos?: string[];
 };
 type DraftInput = {
   topic: string;
@@ -100,6 +101,8 @@ export default function Home() {
   const [angle, setAngle] = useState("");
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [writingStep, setWritingStep] = useState<1 | 2 | 3>(1);
+  const [photos, setPhotos] = useState<string[]>([]);
   // Use deterministic initial values during prerender; set the real date after mount.
   const [today, setToday] = useState(() => new Date(2000, 0, 1));
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(2000, 0, 1));
@@ -144,20 +147,33 @@ export default function Home() {
   }, [calendarMonth]);
 
   const navigate = (next: typeof page) => setPage(next);
-  const startWriting = (topic = "", keyword = "", category: Category = "리빙·제품", purpose: Purpose = "경험 리뷰") => {
-    setDraftInput({ topic, keyword, category, purpose, notes: "", research: "" });
+  const inferCategory = (value: string): Category => {
+    const text = value.toLowerCase();
+    if (/맛집|식당|카페|디저트|빵|케이크|쿠키|국수|고기|음식/.test(text)) return "맛집·카페";
+    if (/여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(text)) return "여행·체험";
+    if (/영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(text)) return "교육 정보";
+    if (/부동산|아파트|전세|월세|청약|이사|주거/.test(text)) return "부동산·주거";
+    if (/지원금|정책|신청|정부|할인|혜택|노동절|공휴일/.test(text)) return "생활·정책";
+    return "리빙·제품";
+  };
+  const startWriting = (topic = "", keyword = "", category?: Category, purpose?: Purpose) => {
+    const detectedCategory = category || inferCategory(keyword || topic);
+    const detectedPurpose = purpose || (detectedCategory === "맛집·카페" || detectedCategory === "여행·체험" ? "경험 리뷰" : "정보 제공");
+    setDraftInput({ topic, keyword, category: detectedCategory, purpose: detectedPurpose, notes: "", research: "" });
     setScheduleDate(dateKey(new Date()));
     setAngle("");
     setDraft("");
+    setPhotos([]);
+    setWritingStep(1);
     setEditingId(null);
     setPage("writing");
   };
   const savePost = (status: Status = "원고 작성") => {
     const title = draftInput.topic.trim() || draftInput.keyword.trim() || "제목 미정";
     if (editingId) {
-      setPosts((old) => old.map((p) => p.id === editingId ? { ...p, title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: scheduleDate, draft, status } : p));
+      setPosts((old) => old.map((p) => p.id === editingId ? { ...p, title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: scheduleDate, draft, photos, status } : p));
     } else {
-      setPosts((old) => [{ id: Date.now(), title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: scheduleDate, status, draft }, ...old]);
+      setPosts((old) => [{ id: Date.now(), title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: scheduleDate, status, draft, photos }, ...old]);
     }
     setPage("calendar");
   };
@@ -166,7 +182,9 @@ export default function Home() {
     setDraftInput({ topic: post.title, keyword: post.keyword, category: post.category, purpose: post.purpose, notes: "", research: "" });
     setScheduleDate(post.date || dateKey(new Date()));
     setDraft(post.draft);
-    setAngle("");
+    setPhotos(post.photos || []);
+    setAngle(post.purpose === "비교·분석" ? "비교 중심" : post.purpose === "정보 제공" ? "정보 중심" : post.purpose === "문제 해결" ? "문제 해결 중심" : "경험 중심");
+    setWritingStep(post.draft ? 3 : 2);
     setPage("writing");
   };
   const updatePost = (id: number, patch: Partial<Post>) => setPosts((old) => old.map((p) => p.id === id ? { ...p, ...patch } : p));
@@ -257,38 +275,59 @@ export default function Home() {
           {page === "templates" && <PopularPostTemplates />}
 
           {page === "writing" && (
-            <section className="mx-auto max-w-4xl">
-              <div className="mb-5 rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <h2 className="font-semibold">1. 글의 기본 방향</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <label className="text-xs text-[#817787]">콘텐츠 분야<select value={draftInput.category} onChange={(e) => setDraftInput({ ...draftInput, category: e.target.value as Category })} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D]">{categories.map((c) => <option key={c}>{c}</option>)}</select></label>
-                  <label className="text-xs text-[#817787]">글의 목적<select value={draftInput.purpose} onChange={(e) => setDraftInput({ ...draftInput, purpose: e.target.value as Purpose })} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D]">{purposes.map((p) => <option key={p}>{p}</option>)}</select></label>
-                  <label className="text-xs text-[#817787] sm:col-span-2">글 주제 / 임시 제목<input value={draftInput.topic} onChange={(e) => setDraftInput({ ...draftInput, topic: e.target.value })} placeholder="예: 고터에서 혼밥하기 좋은 식당 후기" className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D] outline-none focus:border-[#9B82AC]" /></label>
-                  <label className="text-xs text-[#817787] sm:col-span-2">핵심 키워드<input value={draftInput.keyword} onChange={(e) => setDraftInput({ ...draftInput, keyword: e.target.value })} placeholder="예: 고속터미널 혼밥 맛집" className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D] outline-none focus:border-[#9B82AC]" /></label>\n                  <label className="text-xs text-[#817787]">예정 발행일<input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm text-[#29252D]" /></label>
+            <section className="mx-auto max-w-4xl space-y-5">
+              <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div><p className="text-xs font-semibold text-[#80678F]">BLOG WRITING FLOW</p><h2 className="mt-1 text-lg font-semibold">키워드에서 발행까지</h2></div>
+                  <span className="text-xs text-[#918995]">STEP {writingStep} / 3</span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {(["주제·분류", "경험·자료", "원고·발행"] as const).map((label,i)=><button key={label} onClick={()=>setWritingStep((i+1) as 1|2|3)} className={`rounded-lg px-2 py-2.5 text-xs font-semibold ${writingStep===i+1?"bg-[#665174] text-white":"bg-[#F5F1F6] text-[#80678F]"}`}>{i+1}. {label}</button>)}
                 </div>
               </div>
 
-              <div className="mb-5 rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <h2 className="font-semibold">2. 글의 접근 방향 선택</h2><p className="mt-1 text-xs text-[#918995]">같은 주제라도 독자의 검색 의도에 따라 글의 구성을 달리합니다.</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {[
-                    ["경험 중심", "방문·구매·사용 과정과 실제 장단점을 중심으로"],
-                    ["비교 중심", "선택 기준, 대안, 가격과 차이를 중심으로"],
-                    ["정보 중심", "일정·위치·조건·방법 등 확인 가능한 정보를 중심으로"],
-                    ["문제 해결 중심", "독자가 겪는 불편과 해결 순서를 중심으로"],
-                  ].map(([name, desc]) => <button key={name} onClick={() => setAngle(name)} className={`rounded-xl border p-4 text-left ${angle === name ? "border-[#8D789C] bg-[#F7F3F9]" : "border-[#ECE8EA]"}`}><span className="flex items-center justify-between text-sm font-semibold">{name}<span>{angle === name ? "●" : "○"}</span></span><span className="mt-2 block text-xs leading-5 text-[#918995]">{desc}</span></button>)}
+              {writingStep === 1 && <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
+                <h3 className="font-semibold">1. 키워드와 콘텐츠 유형 확인</h3>
+                <p className="mt-1 text-xs leading-5 text-[#918995]">키워드를 바탕으로 분야와 글의 목적을 먼저 분류했어요. 필요하면 직접 수정할 수 있습니다.</p>
+                <label className="mt-4 block text-xs text-[#817787]">핵심 키워드<input value={draftInput.keyword} onChange={e=>setDraftInput({...draftInput,keyword:e.target.value,category:inferCategory(e.target.value)})} placeholder="분석한 키워드" className="mt-2 w-full rounded-xl border border-[#EAE6E8] p-3 text-sm"/></label>
+                <label className="mt-4 block text-xs text-[#817787]">콘텐츠 분야<select value={draftInput.category} onChange={e=>setDraftInput({...draftInput,category:e.target.value as Category})} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-white p-3 text-sm">{categories.map(c=><option key={c}>{c}</option>)}</select></label>
+                <label className="mt-4 block text-xs text-[#817787]">글의 목적<select value={draftInput.purpose} onChange={e=>setDraftInput({...draftInput,purpose:e.target.value as Purpose})} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-white p-3 text-sm">{purposes.map(p=><option key={p}>{p}</option>)}</select></label>
+                <label className="mt-4 block text-xs text-[#817787]">글 주제 / 임시 제목<input value={draftInput.topic} onChange={e=>setDraftInput({...draftInput,topic:e.target.value})} placeholder="키워드를 바탕으로 쓸 글의 주제" className="mt-2 w-full rounded-xl border border-[#EAE6E8] p-3 text-sm"/></label>
+                <div className="mt-5 flex justify-end"><button onClick={()=>setWritingStep(2)} disabled={!draftInput.keyword.trim()&&!draftInput.topic.trim()} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">다음: 작성 방식 선택 →</button></div>
+              </div>}
+
+              {writingStep === 2 && <div className="space-y-5">
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
+                  <h3 className="font-semibold">2. 어떤 방식으로 작성할까요?</h3>
+                  <p className="mt-1 text-xs leading-5 text-[#918995]">선택한 목적에 맞춰 입력 항목이 달라집니다. 직접 경험이 없는 정보형 글이라면 확인 가능한 자료 중심으로 작성하세요.</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {purposes.map(p=><button key={p} onClick={()=>setDraftInput({...draftInput,purpose:p})} className={`rounded-xl border p-4 text-left ${draftInput.purpose===p?"border-[#8D789C] bg-[#F7F3F9]":"border-[#ECE8EA]"}`}><span className="text-sm font-semibold">{p}</span><span className="mt-1 block text-xs leading-5 text-[#918995]">{p==="경험 리뷰"?"직접 방문·구매·사용한 과정과 솔직한 평가":p==="비교·분석"?"여러 선택지의 기준·차이·장단점":p==="정보 제공"?"일정·위치·가격·조건 등 확인된 사실":p==="문제 해결"?"독자의 문제와 해결 절차·주의사항":"추천 대상·선택 이유·구매 또는 이용 판단 기준"}</span></button>)}
+                  </div>
                 </div>
-              </div>
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
+                  <h3 className="font-semibold">3. 내용과 사진 입력</h3>
+                  <p className="mt-1 text-xs text-[#918995]">{draftInput.category} · {draftInput.purpose}에 맞춘 입력 단계입니다.</p>
+                  <label className="mt-4 block text-xs text-[#817787]">{draftInput.purpose==="경험 리뷰"?"직접 경험한 과정과 느낌":draftInput.purpose==="비교·분석"?"비교할 대상과 항목":draftInput.purpose==="정보 제공"?"전달할 핵심 정보와 확인 출처":draftInput.purpose==="문제 해결"?"독자가 겪는 문제와 해결 과정":"추천 대상과 추천·비추천 이유"}
+                    <textarea value={draftInput.notes} onChange={e=>setDraftInput({...draftInput,notes:e.target.value})} rows={7} placeholder={draftInput.category==="맛집·카페"?"방문 시점, 주문 메뉴, 맛과 양, 가격, 대기, 주차, 공간, 좋았던 점과 아쉬운 점을 적어 주세요.":draftInput.category==="여행·체험"?"방문 날짜, 동선, 예약, 이용 요금, 아이 연령별 반응, 편의시설, 주차와 실제 팁을 적어 주세요.":draftInput.category==="교육 정보"?"대상 연령, 교육기관·교재·수업 정보, 아이 반응, 확인한 기준과 출처를 적어 주세요.":"핵심 내용, 실제 상황, 판단 기준, 장단점과 독자에게 필요한 팁을 적어 주세요."} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm leading-6"/></label>
+                  <label className="mt-4 block text-xs text-[#817787]">추가 조사 자료 / 공식 출처 / 참고 링크<textarea value={draftInput.research} onChange={e=>setDraftInput({...draftInput,research:e.target.value})} rows={4} placeholder="가격, 운영시간, 주소, 예약 조건, 제품 사양 등 확인한 자료와 출처를 입력해 주세요." className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm leading-6"/></label>
+                  <div className="mt-4">
+                    <label className="block text-xs font-medium text-[#817787]">사진 첨부</label>
+                    <p className="mt-1 text-[11px] text-[#A49AA9]">직접 촬영한 사진을 여러 장 선택할 수 있어요. 사진은 현재 브라우저에 저장됩니다.</p>
+                    <input type="file" accept="image/*" multiple onChange={e=>{const files=Array.from(e.target.files||[]);files.forEach(file=>{const reader=new FileReader();reader.onload=()=>{if(typeof reader.result==="string")setPhotos(old=>[...old,reader.result as string]);};reader.readAsDataURL(file);});e.currentTarget.value="";}} className="mt-2 block w-full rounded-xl border border-dashed border-[#CFC3D7] bg-[#FCFBFC] p-3 text-xs"/>
+                    {photos.length>0&&<div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">{photos.map((src,i)=><div key={i} className="relative"><img src={src} alt={`첨부 사진 ${i+1}`} className="h-24 w-full rounded-lg object-cover"/><button onClick={()=>setPhotos(old=>old.filter((_,idx)=>idx!==i))} className="absolute right-1 top-1 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">삭제</button></div>)}</div>}
+                  </div>
+                </div>
+                <div className="flex flex-wrap justify-between gap-2"><button onClick={()=>setWritingStep(1)} className="rounded-xl border border-[#EAE6E8] bg-white px-5 py-3 text-sm text-[#716777]">← 이전</button><button onClick={()=>{setAngle(draftInput.purpose==="비교·분석"?"비교 중심":draftInput.purpose==="정보 제공"?"정보 중심":draftInput.purpose==="문제 해결"?"문제 해결 중심":draftInput.purpose==="추천·판매"?"추천 중심":"경험 중심");setDraft(makeDraft(draftInput,draftInput.purpose));setWritingStep(3);}} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white">입력 내용으로 원고 구성 →</button></div>
+              </div>}
 
-              <div className="mb-5 rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <h2 className="font-semibold">3. 내 경험과 추가 자료</h2>
-                <label className="mt-4 block text-xs text-[#817787]">직접 경험한 내용 / 꼭 넣고 싶은 의견<textarea value={draftInput.notes} onChange={(e) => setDraftInput({ ...draftInput, notes: e.target.value })} rows={7} placeholder="방문 계기, 실제 사용감, 좋았던 점, 아쉬웠던 점, 아이 반응 등 사실에 기반한 내용을 편하게 적어 주세요." className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm leading-6 outline-none focus:border-[#9B82AC]" /></label>
-                <label className="mt-4 block text-xs text-[#817787]">조사한 정보 / 공식 자료 / 참고 링크<textarea value={draftInput.research} onChange={(e) => setDraftInput({ ...draftInput, research: e.target.value })} rows={5} placeholder="주소, 가격, 운영시간, 주차, 제품 사양, 공식 안내 링크 등. 확인되지 않은 내용은 미확인이라고 적어 주세요." className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm leading-6 outline-none focus:border-[#9B82AC]" /></label>
-              </div>
-
-              <div className="mb-5 flex flex-col gap-2 sm:flex-row"><button disabled={!angle} onClick={() => setDraft(makeDraft(draftInput, angle))} className="rounded-xl bg-[#665174] px-5 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">글 구성 초안 만들기</button><button onClick={() => savePost("아이디어")} className="rounded-xl border border-[#EAE6E8] bg-white px-5 py-3.5 text-sm font-semibold text-[#716777]">아이디어로 저장</button></div>
-
-              {draft && <div className="rounded-2xl border border-[#DCD2E2] bg-white p-5"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-semibold">4. 편집 가능한 글 초안</h2><button onClick={() => navigator.clipboard?.writeText(draft)} className="rounded-lg border border-[#EAE6E8] px-3 py-2 text-xs text-[#665174]">본문 복사</button></div><p className="mt-2 text-xs leading-5 text-[#A49AA9]">현재는 입력 내용을 구조화하는 초안 기능입니다. AI가 사실을 조사하거나 네이버에 자동 발행하는 기능은 아닙니다.</p><textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={25} className="mt-4 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-4 text-sm leading-7 outline-none focus:border-[#9B82AC]" /><div className="mt-4 flex flex-col gap-2 sm:flex-row"><button onClick={() => savePost("원고 작성")} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white">원고 저장하고 캘린더로</button><button onClick={() => savePost("발행 준비")} className="rounded-xl border border-[#EAE6E8] px-5 py-3 text-sm font-semibold text-[#716777]">발행 준비로 저장</button></div></div>}
+              {writingStep === 3 && <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-semibold">4. 원고 확인 및 발행 준비</h3><p className="mt-1 text-xs text-[#918995]">{draftInput.category} · {draftInput.purpose} · 사진 {photos.length}장</p></div><button onClick={()=>setWritingStep(2)} className="rounded-lg border border-[#EAE6E8] px-3 py-2 text-xs text-[#665174]">입력 내용 수정</button></div>
+                <p className="mt-3 rounded-xl bg-[#F8F5F9] p-3 text-xs leading-5 text-[#817787]">초안은 입력한 내용을 정리한 편집용 구조입니다. 확인되지 않은 사실은 직접 검증해 주세요. 현재 네이버 블로그 자동 발행은 연결되어 있지 않습니다.</p>
+                <textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={24} className="mt-4 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-4 text-sm leading-7"/>
+                <label className="mt-4 block text-xs text-[#817787]">예정 발행일<input type="date" value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm"/></label>
+                <div className="mt-5 flex flex-col gap-2 sm:flex-row"><button onClick={()=>savePost("발행 준비")} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white">발행 준비 저장</button><button onClick={()=>savePost("원고 작성")} className="rounded-xl border border-[#EAE6E8] px-5 py-3 text-sm text-[#716777]">임시 원고 저장</button><button onClick={()=>navigator.clipboard?.writeText(draft)} className="rounded-xl border border-[#EAE6E8] px-5 py-3 text-sm text-[#716777]">본문 복사</button></div>
+                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">네이버에 직접 발행한 뒤 캘린더에서 상태를 ‘발행 완료’로 변경할 수 있습니다.</p>
+              </div>}
             </section>
           )}
 
