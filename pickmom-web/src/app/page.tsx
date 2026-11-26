@@ -83,7 +83,12 @@ export default function Home() {
 
   const [writingTitle, setWritingTitle] = useState("");
   const [writingStep, setWritingStep] = useState(1);
-  const [writingType, setWritingType] = useState("실제 경험 후기");
+  const [writingType, setWritingType] = useState("직접 경험 후기");
+  const [writingTargetKeyword, setWritingTargetKeyword] = useState("");
+  const [writingDocumentCount, setWritingDocumentCount] = useState<number | null>(null);
+  const [writingRelatedKeywords, setWritingRelatedKeywords] = useState<string[]>([]);
+  const [writingKeywordLoading, setWritingKeywordLoading] = useState(false);
+  const [writingKeywordError, setWritingKeywordError] = useState("");
   const [writingKeyword, setWritingKeyword] = useState("");
   const [writingNotes, setWritingNotes] = useState("");
   const [writingFiles, setWritingFiles] = useState<string[]>([]);
@@ -116,12 +121,59 @@ export default function Home() {
   const startWriting = (title: string) => {
     setWritingTitle(title);
     setWritingStep(1);
-    setWritingType("실제 경험 후기");
+    setWritingType("직접 경험 후기");
+    setWritingTargetKeyword("");
+    setWritingDocumentCount(null);
+    setWritingRelatedKeywords([]);
+    setWritingKeywordError("");
     setWritingKeyword("");
+
     setWritingNotes("");
     setWritingFiles([]);
     setActiveMenu("새 글 만들기");
     setView("writing");
+  };
+
+  const searchWritingKeyword = async () => {
+    const target = writingTargetKeyword.trim();
+    if (!target) return;
+    setWritingKeywordLoading(true);
+    setWritingKeywordError("");
+    setWritingDocumentCount(null);
+    setWritingRelatedKeywords([]);
+    try {
+      const response = await fetch("/api/keyword-research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "blog", keyword: target }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "키워드 검색에 실패했습니다.");
+      setWritingDocumentCount(typeof data.total === "number" ? data.total : null);
+      const stopWords = new Set(["그리고", "하지만", "정말", "너무", "있는", "없는", "하는", "위한", "에서", "으로", "아이", "추천", "후기"]);
+      const counts = new Map<string, number>();
+      for (const item of data.items ?? []) {
+        const text = `${item.title ?? ""} ${item.description ?? ""}`.replace(/<[^>]*>/g, " ");
+        const words = text.match(/[가-힣A-Za-z0-9]{2,}/g) ?? [];
+        for (const word of words) {
+          const normalized = word.trim();
+          if (!stopWords.has(normalized) && normalized !== target && !target.includes(normalized)) {
+            counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+          }
+        }
+      }
+      setWritingRelatedKeywords(
+        [...counts.entries()]
+          .filter(([, count]) => count >= 2)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 12)
+          .map(([word]) => word)
+      );
+    } catch (error) {
+      setWritingKeywordError(error instanceof Error ? error.message : "키워드 검색 중 오류가 발생했습니다.");
+    } finally {
+      setWritingKeywordLoading(false);
+    }
   };
 
   const backToTopics = () => {
@@ -460,11 +512,11 @@ export default function Home() {
               <div className="mb-7 rounded-2xl border border-[#ECE8EA] bg-white p-5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-[#665174]">CONTENT CREATION</span>
-                  <span className="text-xs text-[#A49AA9]">STEP {writingStep} / 4</span>
+                  <span className="text-xs text-[#A49AA9]">STEP {writingStep} / 5</span>
                 </div>
 
                 <div className="mt-4 flex gap-2">
-                  {[1, 2, 3, 4].map((step) => (
+                  {[1, 2, 3, 4, 5].map((step) => (
                     <div
                       key={step}
                       className={`h-1.5 flex-1 rounded-full ${
@@ -475,47 +527,72 @@ export default function Home() {
                 </div>
 
                 <h2 className="mt-5 font-semibold">
-                  {writingStep === 1 && "어떤 글을 작성할까요?"}
-                  {writingStep === 2 && "나의 경험과 사진을 추가해 주세요."}
-                  {writingStep === 3 && "조사한 정보와 추가 메모를 입력해 주세요."}
-                  {writingStep === 4 && "작성 내용을 확인해 주세요."}
+                  {writingStep === 1 && "먼저 검색 키워드를 정해 주세요."}
+                  {writingStep === 2 && "어떤 방향으로 글을 쓸까요?"}
+                  {writingStep === 3 && "나의 경험과 사진을 추가해 주세요."}
+                  {writingStep === 4 && "조사한 정보와 추가 메모를 입력해 주세요."}
+                  {writingStep === 5 && "작성 내용을 확인해 주세요."}
                 </h2>
 
                 <p className="mt-2 text-xs text-[#918995]">
-                  {writingStep === 1 && "콘텐츠의 목적과 형식을 선택해 주세요."}
-                  {writingStep === 2 && "기억나는 경험을 편하게 적고 사진을 첨부해 주세요."}
-                  {writingStep === 3 && "영업시간, 주차, 가격 등 조사한 정보를 자유롭게 붙여 넣으세요."}
-                  {writingStep === 4 && "입력한 경험과 자료를 확인해 주세요."}
+                  {writingStep === 1 && "실제로 검색되는 단어를 입력하고 문서 수와 함께 등장하는 표현을 확인합니다."}
+                  {writingStep === 2 && "검색 의도에 맞는 글의 유형을 하나 선택해 주세요."}
+                  {writingStep === 3 && "기억나는 경험을 편하게 적고 사진을 첨부해 주세요."}
+                  {writingStep === 4 && "영업시간, 주차, 가격 등 조사한 정보를 자유롭게 붙여 넣으세요."}
+                  {writingStep === 5 && "선택한 키워드와 글 방향, 입력한 자료를 확인해 주세요."}
                 </p>
               </div>
 
-              {/* STEP 1. 콘텐츠 유형 */}
+              {/* STEP 1. 키워드 선택 */}
               {writingStep === 1 && (
                 <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 sm:p-7">
-                  <h3 className="font-semibold">콘텐츠 유형 선택</h3>
+                  <h3 className="font-semibold">어떤 키워드로 검색 유입을 만들까요?</h3>
+                  <p className="mt-2 text-xs leading-6 text-[#918995]">문장보다 실제 검색창에 입력할 만한 핵심 단어를 입력해 주세요. 예: 서래마을 맛집, 초등 영어 교재, 서울 크리스마스 마켓</p>
+                  <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                    <input value={writingTargetKeyword} onChange={(e) => setWritingTargetKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") searchWritingKeyword(); }} placeholder="검색 키워드 입력" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
+                    <button onClick={searchWritingKeyword} disabled={!writingTargetKeyword.trim() || writingKeywordLoading} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">{writingKeywordLoading ? "검색 중..." : "키워드 분석"}</button>
+                  </div>
+                  {writingKeywordError && <p className="mt-3 text-xs text-[#A15B5B]">{writingKeywordError}</p>}
+                  {writingDocumentCount !== null && (
+                    <div className="mt-5 rounded-xl bg-[#F8F5F9] p-4">
+                      <p className="text-xs text-[#817787]">네이버 블로그 검색 결과 문서 수</p>
+                      <p className="mt-1 text-2xl font-semibold text-[#665174]">{writingDocumentCount.toLocaleString("ko-KR")}<span className="ml-1 text-xs font-normal">건</span></p>
+                      <p className="mt-2 text-[10px] leading-5 text-[#A49AA9]">네이버 블로그 검색 API의 전체 결과 수입니다. 월간 검색량이나 전체 웹문서 수와는 다른 지표입니다.</p>
+                    </div>
+                  )}
+                  {writingRelatedKeywords.length > 0 && (
+                    <div className="mt-5">
+                      <h4 className="text-sm font-semibold">검색 결과에서 함께 발견된 표현</h4>
+                      <p className="mt-1 text-[10px] text-[#A49AA9]">수집된 블로그 제목·요약에 반복 등장한 단어입니다. 네이버 공식 연관검색어 목록은 아닙니다.</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {writingRelatedKeywords.map((word) => (
+                          <button key={word} onClick={() => setWritingTargetKeyword(word)} className={`rounded-full border px-3 py-2 text-xs ${writingTargetKeyword === word ? "border-[#8D789C] bg-[#F0EAF4] text-[#665174]" : "border-[#ECE8EA] bg-white text-[#817787]"}`}>{word}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 2. 글 방향 */}
+              {writingStep === 2 && (
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 sm:p-7">
+                  <h3 className="font-semibold">글 방향을 하나 선택해주세요.</h3>
+                  <p className="mt-2 text-xs text-[#918995]">선택한 방향에 맞춰 제목과 본문 구성을 만들게요.</p>
                   <div className="mt-5 flex flex-col gap-3">
                     {[
-                      ["실제 경험 후기", "직접 방문하거나 사용한 경험 중심"],
-                      ["정보형 콘텐츠", "일정, 가격, 방법 등 정보 정리"],
-                      ["비교 · 추천", "여러 장소나 제품의 장단점 비교"],
+                      ["정보·방법", "꿀팁 · 방법 · 가이드"],
+                      ["직접 경험 후기", "내돈내산 · 솔직 리뷰"],
+                      ["비교·선택", "장단점 비교 · 추천"],
+                      ["문제 해결", "궁금증 · 오류 해결"],
                     ].map(([name, desc]) => (
-                      <button
-                        key={name}
-                        onClick={() => setWritingType(name)}
-                        className={`rounded-xl border p-4 text-left ${
-                          writingType === name
-                            ? "border-[#8D789C] bg-[#F7F3F9]"
-                            : "border-[#ECE8EA]"
-                        }`}
-                      >
-                        <div className="flex justify-between text-sm font-semibold">
-                          {name}
-                          <span>{writingType === name ? "●" : "○"}</span>
-                        </div>
+                      <button key={name} onClick={() => setWritingType(name)} className={`rounded-xl border p-4 text-left ${writingType === name ? "border-[#8D789C] bg-[#F7F3F9]" : "border-[#ECE8EA]"}`}>
+                        <div className="flex items-center justify-between text-sm font-semibold">{name}<span>{writingType === name ? "●" : "○"}</span></div>
                         <p className="mt-2 text-xs text-[#918995]">{desc}</p>
                       </button>
                     ))}
                   </div>
+                  <p className="mt-5 text-xs font-medium text-[#665174]">다음: 제목 만들기 →</p>
                 </div>
               )}
 
@@ -609,11 +686,16 @@ export default function Home() {
 
                   <div className="mt-5 space-y-4">
                     <div className="rounded-xl bg-[#F8F5F9] p-4">
-                      <p className="text-xs text-[#A49AA9]">글 유형</p>
+                      <p className="text-xs text-[#A49AA9]">메인 키워드</p>
+                      <p className="mt-2 text-sm font-semibold">{writingTargetKeyword || "선택한 키워드가 없어요."}</p>
+                      {writingDocumentCount !== null && <p className="mt-1 text-xs text-[#817787]">네이버 블로그 검색 결과 {writingDocumentCount.toLocaleString("ko-KR")}건</p>}
+                    </div>
+                    <div className="rounded-xl bg-[#F8F5F9] p-4">
+                      <p className="text-xs text-[#A49AA9]">글 방향</p>
                       <p className="mt-2 text-sm font-semibold">{writingType}</p>
                     </div>
 
-                    {writingTitle && (
+                    {writingRelatedKeywords.length > 0 && <div className="rounded-xl bg-[#F8F5F9] p-4"><p className="text-xs text-[#A49AA9]">함께 발견된 표현</p><p className="mt-2 text-sm text-[#716777]">{writingRelatedKeywords.join(" · ")}</p></div>}\n                    {writingTitle && (
                       <div className="rounded-xl bg-[#F8F5F9] p-4">
                         <p className="text-xs text-[#A49AA9]">선택한 주제</p>
                         <p className="mt-2 text-sm font-semibold">{writingTitle}</p>
@@ -643,10 +725,10 @@ export default function Home() {
                   <div className="mt-6 rounded-xl border border-[#EAE3EE] p-4">
                     <p className="text-sm font-semibold text-[#665174]">다음 단계에서 진행할 작업</p>
                     <ul className="mt-3 space-y-2 text-xs leading-6 text-[#817787]">
-                      <li>✓ 메모 내용에서 주제와 키워드 자동 추출</li>
+                      <li>✓ 선택한 키워드와 글 방향으로 제목 후보 생성</li>
                       <li>✓ 네이버 검색 결과와 경쟁 콘텐츠 조사</li>
                       <li>✓ 공식 자료 및 사실 확인</li>
-                      <li>✓ 제목 3개와 완성된 본문 생성</li>
+                      <li>✓ 경험과 자료를 반영한 본문 작성</li>
                     </ul>
                   </div>
 
@@ -667,7 +749,7 @@ export default function Home() {
                   </button>
                 )}
 
-                {writingStep < 4 ? (
+                {writingStep < 5 ? (
                   <button
                     onClick={() => setWritingStep(writingStep + 1)}
                     className="flex-1 rounded-xl bg-[#665174] py-4 text-sm font-semibold text-white"
