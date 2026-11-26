@@ -33,6 +33,11 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     if (!response.ok) {
+      console.error("Naver Blog Search API returned an error:", {
+        status: response.status,
+        errorCode: data?.errorCode,
+        errorMessage: data?.errorMessage,
+      });
       return NextResponse.json(
         { error: data?.errorMessage || "네이버 블로그 검색 요청에 실패했습니다." },
         { status: response.status }
@@ -59,7 +64,8 @@ export async function GET(request: NextRequest) {
         postDate: item.postdate,
       })),
     });
-  } catch {
+  } catch (error) {
+    console.error("Naver Blog Search request failed:", error);
     return NextResponse.json(
       { error: "네이버 API에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요." },
       { status: 502 }
