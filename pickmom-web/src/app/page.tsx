@@ -99,10 +99,16 @@ export default function Home() {
   const [angle, setAngle] = useState("");
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
-  const [scheduleDate, setScheduleDate] = useState(() => dateKey(new Date()));
+  // Use deterministic initial values during prerender; set the real date after mount.
+  const [today, setToday] = useState(() => new Date(2000, 0, 1));
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(2000, 0, 1));
+  const [scheduleDate, setScheduleDate] = useState("2000-01-01");
 
   useEffect(() => {
+    const now = new Date();
+    setToday(now);
+    setCalendarMonth(now);
+    setScheduleDate(dateKey(now));
     try {
       const raw = window.localStorage.getItem("pickmom-blog-posts-v2");
       if (raw) setPosts(JSON.parse(raw) as Post[]);
@@ -116,7 +122,7 @@ export default function Home() {
     if (loaded) window.localStorage.setItem("pickmom-blog-posts-v2", JSON.stringify(posts));
   }, [posts, loaded]);
 
-  const weekStart = mondayOf(new Date());
+  const weekStart = mondayOf(today);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
   const thisWeekPosts = posts.filter((post) => {
