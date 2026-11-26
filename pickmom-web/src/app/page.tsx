@@ -100,6 +100,7 @@ export default function Home() {
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+  const [scheduleDate, setScheduleDate] = useState(() => dateKey(new Date()));
 
   useEffect(() => {
     try {
@@ -138,6 +139,7 @@ export default function Home() {
   const navigate = (next: typeof page) => setPage(next);
   const startWriting = (topic = "", keyword = "", category: Category = "리빙·제품", purpose: Purpose = "경험 리뷰") => {
     setDraftInput({ topic, keyword, category, purpose, notes: "", research: "" });
+    setScheduleDate(dateKey(new Date()));
     setAngle("");
     setDraft("");
     setEditingId(null);
@@ -155,6 +157,7 @@ export default function Home() {
   const editPost = (post: Post) => {
     setEditingId(post.id);
     setDraftInput({ topic: post.title, keyword: post.keyword, category: post.category, purpose: post.purpose, notes: "", research: "" });
+    setScheduleDate(post.date || dateKey(new Date()));
     setDraft(post.draft);
     setAngle("");
     setPage("writing");
