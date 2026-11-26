@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import CompetitorAnalysis from "./components/competitor-analysis";
+import PopularPostTemplates from "./components/popular-post-templates";
 
 type Category = "리빙·제품" | "맛집·카페" | "여행·체험" | "교육 정보" | "부동산·주거" | "생활·정책";
 type Purpose = "경험 리뷰" | "비교·분석" | "정보 제공" | "문제 해결" | "추천·판매";
@@ -88,7 +89,7 @@ ${keyword}를 알아보는 분들에게 도움이 되도록 핵심 내용을 정
 }
 
 export default function Home() {
-  const [page, setPage] = useState<"home" | "keywords" | "writing" | "calendar">("home");
+  const [page, setPage] = useState<"home" | "keywords" | "templates" | "writing" | "calendar">("home");
   const [posts, setPosts] = useState<Post[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [showIdeas, setShowIdeas] = useState(false);
@@ -177,6 +178,7 @@ export default function Home() {
   const navItems = [
     { id: "home" as const, label: "홈", icon: "⌂" },
     { id: "keywords" as const, label: "키워드 연구소", icon: "⌕" },
+    { id: "templates" as const, label: "인기글 분석·템플릿", icon: "▤" },
     { id: "writing" as const, label: "블로그 글쓰기", icon: "✎" },
     { id: "calendar" as const, label: "콘텐츠 캘린더", icon: "▦" },
   ];
@@ -250,7 +252,9 @@ export default function Home() {
             </>
           )}
 
-          {page === "keywords" && <section className="rounded-2xl border border-[#ECE8EA] bg-white p-4 sm:p-6"><div className="mb-5"><h2 className="font-semibold">키워드 연구소</h2><p className="mt-1 text-xs leading-5 text-[#918995]">기존 키워드 분석 화면을 유지합니다. 검색 API 연결이나 인증 설정은 이번 화면 개편에서 변경하지 않습니다.</p></div><CompetitorAnalysis /></section>}
+          {page === "keywords" && <section className="rounded-2xl border border-[#ECE8EA] bg-white p-4 sm:p-6"><div className="mb-5"><h2 className="font-semibold">키워드 연구소</h2><p className="mt-1 text-xs leading-5 text-[#918995]">기존 키워드 분석 화면을 유지합니다. 검색 API 연결이나 인증 설정은 이번 화면 개편에서 변경하지 않습니다.</p></div><CompetitorAnalysis onSelectKeyword={(keyword) => startWriting(keyword, keyword)} /></section>}
+
+          {page === "templates" && <PopularPostTemplates />}
 
           {page === "writing" && (
             <section className="mx-auto max-w-4xl">
