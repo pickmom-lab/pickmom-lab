@@ -6,11 +6,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "검색어를 입력해 주세요." }, { status: 400 });
   }
 
-  const clientId = process.env.NAVER_CLIENT_ID;
-  const clientSecret = process.env.NAVER_CLIENT_SECRET;
+  const clientId = process.env.NAVER_CLIENT_ID?.trim();
+  const clientSecret = process.env.NAVER_CLIENT_SECRET?.trim();
   if (!clientId || !clientSecret) {
     return NextResponse.json(
       { error: "네이버 API 환경변수가 설정되지 않았습니다. Vercel 설정을 확인해 주세요." },
+      { status: 500 }
+    );
+  }
+
+  // Naver API credentials should be ASCII. Report only which variable is malformed;
+  // never expose or log the credential values themselves.
+  const clientIdHasNonAscii = !/^[\x00-\x7F]*$/.test(clientId);
+  const clientSecretHasNonAscii = !/^[\x00-\x7F]*$/.test(clientSecret);
+  if (clientIdHasNonAscii || clientSecretHasNonAscii) {
+    return NextResponse.json(
+      {
+        error: "네이버 API 인증값에 한글 등 ASCII가 아닌 문자가 포함되어 있습니다.",
+        diagnostic: {
+          NAVER_CLIENT_ID_has_non_ascii: clientIdHasNonAscii,
+          NAVER_CLIENT_SECRET_has_non_ascii: clientSecretHasNonAscii,
+        },
+      },
       { status: 500 }
     );
   }
