@@ -235,7 +235,9 @@ function KeywordSection({ title, description, rows, documentCounts, loadingCount
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const count = documentCounts[row.word];
+              return (
               <tr key={row.word} className={`border-t border-[#F2EFF3] ${selectedKeyword === row.word ? "bg-[#F8F5F9]" : ""}`}>
                 <td className="px-1.5 py-3 text-center sm:px-3">
                   <input type="radio" name="final-keyword" aria-label={`${row.word} 선택`} checked={selectedKeyword === row.word} onChange={() => onSelect(row.word)} className="h-4 w-4 accent-[#665174]" />
@@ -245,9 +247,10 @@ function KeywordSection({ title, description, rows, documentCounts, loadingCount
                   <span className="mt-1 block text-[9px] text-[#806B8E] sm:inline sm:ml-2 sm:mt-0">{row.kind}</span>
                 </td>
                 <td className="break-words px-1.5 py-3 text-[#A49AA9] sm:px-3">별도 데이터 필요</td>
-                <td className="break-words px-1.5 py-3 text-[#665174] sm:px-3">{loadingCounts ? "조회 중…" : documentCounts[row.word] === null ? "조회 실패" : documentCounts[row.word] === undefined ? "—" : documentCounts[row.word].toLocaleString("ko-KR")}</td>
+                <td className="break-words px-1.5 py-3 text-[#665174] sm:px-3">{loadingCounts ? "조회 중…" : count === null ? "조회 실패" : count === undefined ? "—" : count.toLocaleString("ko-KR")}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
