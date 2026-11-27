@@ -116,13 +116,13 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
   };
   const insertNoteStarter = () => {
     const starters: Record<Purpose, string> = {
-      "실사용 후기": "왜 이용하게 됐나요?\\n이용 전 궁금했던 점은요?\\n직접 이용한 과정은 어땠나요?\\n가장 좋았던 점은요?\\n아쉬웠던 점이나 팁은요?",
-      "정보": "이 정보를 누가 필요로 할까요?\\n독자가 가장 궁금해할 질문은요?\\n확인한 공식 자료나 출처는요?\\n대상·조건·기간·비용 중 확인한 내용은요?\\n아직 확인하지 못한 내용은요?",
-      "비교": "무엇과 무엇을 비교하나요?\\n각 대상의 가격·조건은요?\\n가장 중요한 선택 기준은요?\\n각각의 장점과 아쉬운 점은요?\\n어떤 사람에게 어떤 선택이 맞을까요?",
-      "문제 해결": "어떤 문제가 있었나요?\\n어떤 상황에서 생겼나요?\\n확인된 원인은요?\\n시도한 해결 방법은요?\\n결과와 주의할 점은요?"
+      "실사용 후기": "왜 이용하게 됐나요?\n이용 전 궁금했던 점은요?\n직접 이용한 과정은 어땠나요?\n가장 좋았던 점은요?\n아쉬웠던 점이나 팁은요?",
+      "정보": "이 정보를 누가 필요로 할까요?\n독자가 가장 궁금해할 질문은요?\n확인한 공식 자료나 출처는요?\n대상·조건·기간·비용 중 확인한 내용은요?\n아직 확인하지 못한 내용은요?",
+      "비교": "무엇과 무엇을 비교하나요?\n각 대상의 가격·조건은요?\n가장 중요한 선택 기준은요?\n각각의 장점과 아쉬운 점은요?\n어떤 사람에게 어떤 선택이 맞을까요?",
+      "문제 해결": "어떤 문제가 있었나요?\n어떤 상황에서 생겼나요?\n확인된 원인은요?\n시도한 해결 방법은요?\n결과와 주의할 점은요?"
     };
     const starter = starters[purpose];
-    setNotes(old => old.trim() ? `${old.trim()}\\n\\n${starter}` : starter);
+    setNotes(old => old.trim() ? `${old.trim()}\n\n${starter}` : starter);
   };
   const buildChatGPTPrompt = () => [
     "당신은 한국 네이버 블로그 전문 에디터입니다. 아래 사용자 제공 정보만 근거로 자연스러운 한국어 블로그 원고를 작성하세요.",
@@ -220,7 +220,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
       <button disabled={!keyword.trim()} onClick={()=>setStep(2)} className="mt-5 rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">다음 단계 →</button>
     </div>}
     {step===2 && <div className="space-y-4 rounded-2xl border bg-white p-5 md:p-6">
-      <div><h3 className="font-semibold">경험과 알고 있는 내용을 편하게 적어주세요.</h3><p className="mt-1 text-xs leading-5 text-[#918995]">완성된 문장으로 쓸 필요 없어요. 단어와 짧은 메모만 적어도 됩니다. 자료가 없다면 아래 질문을 넣어 하나씩 채우거나, 키워드만으로 글의 뼈대부터 만들 수 있어요.</p><button type="button" onClick={insertNoteStarter} className="mt-3 rounded-lg border border-[#DCD2E3] bg-[#F8F5F9] px-3 py-2 text-xs font-semibold text-[#665174]">내 글 유형에 맞는 메모 질문 넣기</button></p></div>
+      <div><h3 className="font-semibold">경험과 알고 있는 내용을 편하게 적어주세요.</h3><p className="mt-1 text-xs leading-5 text-[#918995]">완성된 문장으로 쓸 필요 없어요. 단어와 짧은 메모만 적어도 됩니다. 자료가 없다면 아래 질문을 넣어 하나씩 채우거나, 키워드만으로 글의 뼈대부터 만들 수 있어요.</p><button type="button" onClick={insertNoteStarter} className="mt-3 rounded-lg border border-[#DCD2E3] bg-[#F8F5F9] px-3 py-2 text-xs font-semibold text-[#665174]">내 글 유형에 맞는 메모 질문 넣기</button></div>
       {researchPlan.trim() && <div className="rounded-xl border border-[#E5DCEB] bg-[#F8F5F9] p-4"><h4 className="text-sm font-semibold text-[#665174]">이 주제의 조사·비교 제안</h4><p className="mt-1 text-[11px] leading-5 text-[#817787]">아래 내용을 바탕으로 자료를 확인한 뒤, 본인이 찾은 정보와 의견을 추가해 주세요.</p><pre className="mt-3 whitespace-pre-wrap font-sans text-xs leading-6 text-[#665174]">{researchPlan}</pre></div>}
       <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={9} placeholder="예: 주차 편했음 / 아이가 만들기 수업을 좋아함 / 책을 재미있게 읽어주심… 짧은 메모만 적어도 돼요." className="w-full rounded-xl border p-4 text-sm leading-7"/>
       <div className="rounded-xl border border-dashed p-4"><h4 className="text-sm font-semibold">사진 첨부 (최대 12장)</h4><input type="file" accept="image/*" multiple disabled={busy||photos.length>=12} onChange={e=>{void addPhotos(e.target.files);e.currentTarget.value="";}} className="mt-3 w-full text-xs"/>{photos.map((p,i)=><div key={p.id} className="mt-3 flex items-center gap-3 border-t pt-3"><img src={p.src} alt="" className="h-16 w-16 rounded-lg object-cover"/><div className="min-w-0 flex-1"><input value={p.caption} onChange={e=>setPhotos(old=>old.map((x,j)=>j===i?{...x,caption:e.target.value}:x))} placeholder="선택: 사진 설명" className="w-full rounded border p-2 text-xs"/><div className="mt-2 flex gap-3 text-xs"><button onClick={()=>movePhoto(i,-1)} disabled={!i}>위로</button><button onClick={()=>movePhoto(i,1)} disabled={i===photos.length-1}>아래로</button><button onClick={()=>setPhotos(old=>old.filter((_,j)=>j!==i))} className="text-rose-700">삭제</button></div></div></div>)}</div>
