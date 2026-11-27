@@ -126,14 +126,23 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
   ].filter(Boolean).join("\n\n");
   const sendToChatGPT = async () => {
     if (!keyword.trim() || !notes.trim()) { setExternalStatus("핵심 키워드와 경험·자료를 먼저 입력해 주세요."); return; }
-    window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
-    try {
-      await navigator.clipboard.writeText(buildChatGPTPrompt());
+    const prompt = buildChatGPTPrompt();
+    // ChatGPT's q parameter pre-fills the composer; the user reviews and sends it there.
+    const chatUrl = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`;
+    if (prompt.length <= 5500) {
+      window.open(chatUrl, "_blank", "noopener,noreferrer");
       setExternalPrompt("");
-      setExternalStatus("프롬프트를 복사했어요. 열린 ChatGPT 대화창에 붙여넣으면 됩니다.");
+      setExternalStatus("입력 내용이 ChatGPT에 전달됐어요. ChatGPT 입력창에서 내용을 확인한 뒤 전송해 주세요.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(prompt);
+      window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
+      setExternalPrompt("");
+      setExternalStatus("내용이 길어 자동 입력 대신 복사했어요. 열린 ChatGPT 입력창에 붙여넣어 주세요.");
     } catch {
-      setExternalPrompt(buildChatGPTPrompt());
-      setExternalStatus("자동 복사가 제한되어 아래 프롬프트를 직접 복사해 주세요.");
+      setExternalPrompt(prompt);
+      setExternalStatus("내용이 길어 직접 복사가 필요해요. 아래 프롬프트를 복사해 ChatGPT에 붙여넣어 주세요.");
     }
   };
   const generateWithGemini = async () => {
