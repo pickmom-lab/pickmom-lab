@@ -30,7 +30,7 @@ type DraftInput = {
   research: string;
 };
 
-const categories: Category[] = ["리빙·제품", "쇼핑·제품", "맛집·카페", "여행·체험", "교육 정보", "부동산·주거", "생활·정책"];
+const categories: Category[] = ["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
 const purposes: Purpose[] = ["경험 리뷰", "비교·분석", "정보 제공", "문제 해결", "추천·판매"];
 const statuses: Status[] = ["아이디어", "키워드 선정", "자료 조사", "원고 작성", "발행 준비", "발행 완료"];
 const ideas = [
@@ -159,7 +159,7 @@ export default function Home() {
     if (/여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(text)) return "여행·체험";
     if (/영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(text)) return "교육 정보";
     if (/부동산|아파트|전세|월세|청약|이사|주거/.test(text)) return "부동산·주거";
-    if (/선물|추천|구매|가격|제품|상품|쇼핑/.test(text)) return "쇼핑·제품";
+    if (/선물|추천|구매|가격|제품|상품|쇼핑/.test(text)) return "리빙·제품";
     if (/지원금|정책|신청|정부|할인|혜택|노동절|공휴일/.test(text)) return "생활·정책";
     return "리빙·제품";
   };
