@@ -8,6 +8,7 @@ type Photo = { id: string; src: string; caption: string };
 type Props = {
   initialKeyword?: string;
   initialCategory?: Category;
+  initialPurpose?: string;
   initialNotes?: string;
   initialPhotos?: string[];
   initialData?: string;
@@ -42,12 +43,13 @@ const compressPhoto = (file: File) => new Promise<string>((resolve) => {
   };
   reader.readAsDataURL(file);
 });
-export default function WritingStudio({ initialKeyword = "", initialCategory, initialNotes = "", initialPhotos, initialData, onSave }: Props) {
+export default function WritingStudio({ initialKeyword = "", initialCategory, initialPurpose, initialNotes = "", initialPhotos, initialData, onSave }: Props) {
   const [keyword, setKeyword] = useState(initialKeyword);
   const [category, setCategory] = useState<Category>(initialCategory || detect(initialKeyword));
   const [purpose, setPurpose] = useState<Purpose>(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보");
   const [date, setDate] = useState(today());
   const [notes, setNotes] = useState("");
+  const [researchPlan, setResearchPlan] = useState("");
   const [title, setTitle] = useState(initialKeyword);
   const [draft, setDraft] = useState("");
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -60,8 +62,8 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
   const [externalStatus, setExternalStatus] = useState("");
   const [externalPrompt, setExternalPrompt] = useState("");
   useEffect(() => {
-    if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(initialCategory || detect(initialKeyword)); setPurpose(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보"); setNotes(initialNotes); }
-  }, [initialKeyword, initialCategory, initialNotes, initialData]);
+    if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(initialCategory || detect(initialKeyword)); setPurpose(initialPurpose === "비교·분석" ? "비교" : initialPurpose === "문제 해결" ? "문제 해결" : initialPurpose === "경험 리뷰" || initialPurpose === "직접 경험·방문 후기" ? "실사용 후기" : "정보"); setResearchPlan(initialNotes); setNotes(""); }
+  }, [initialKeyword, initialCategory, initialPurpose, initialNotes, initialData]);
   useEffect(() => {
     if (!initialData) return;
     try {
@@ -120,6 +122,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     `핵심 키워드: ${keyword.trim()}`,
     `카테고리: ${category}`,
     `콘텐츠 유형: ${purpose}`,
+    `조사·비교 기획안:\n${researchPlan.trim() || "별도 기획안 없음"}`,
     `사용자가 제공한 경험·자료:\n${notes.trim()}`,
     tips.trim() ? `추가 요청:\n${tips.trim()}` : "",
     `사진 설명(실제 이미지 분석 아님):\n${photos.map((p,i)=>`사진 ${i+1}: ${p.caption.trim() || "설명 없음"}`).join("\n") || "첨부 사진 없음"}`,
@@ -153,7 +156,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
       const response = await fetch("/api/gemini/generate-draft", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          keyword: keyword.trim(), category, purpose, notes: notes.trim(), tips: tips.trim(),
+          keyword: keyword.trim(), category, purpose, notes: `[조사·비교 기획안]\n${researchPlan.trim()}\n\n[사용자 제공 자료]\n${notes.trim()}`, tips: tips.trim(),
           photoCaptions: photos.map((photo,index)=>({number:index+1,caption:photo.caption.trim()}))
         })
       });
@@ -179,7 +182,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
           keyword: keyword.trim(),
           category,
           purpose,
-          notes: notes.trim(),
+          notes: `[조사·비교 기획안]\n${researchPlan.trim()}\n\n[사용자 제공 자료]\n${notes.trim()}`,
           tips: tips.trim(),
           photoCaptions: photos.map((photo, index) => ({ number: index + 1, caption: photo.caption.trim() })),
         }),
@@ -208,7 +211,8 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     </div>}
     {step===2 && <div className="space-y-4 rounded-2xl border bg-white p-5 md:p-6">
       <div><h3 className="font-semibold">경험과 알고 있는 내용을 편하게 적어주세요.</h3><p className="mt-1 text-xs leading-5 text-[#918995]">항목별로 나눠 입력할 필요 없습니다. 방문 과정, 좋았던 점, 아쉬운 점, 가격, 주소, 주차 등 기억나는 내용을 한 번에 적으면 AI가 글의 유형에 맞춰 정리하도록 설계합니다.</p></div>
-      <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={9} placeholder="예: 어디를 방문했는지, 왜 선택했는지, 실제로 어땠는지, 독자에게 알려주고 싶은 점을 자유롭게 적어주세요." className="w-full rounded-xl border p-4 text-sm leading-7"/>
+      {researchPlan.trim() && <div className="rounded-xl border border-[#E5DCEB] bg-[#F8F5F9] p-4"><h4 className="text-sm font-semibold text-[#665174]">이 주제의 조사·비교 제안</h4><p className="mt-1 text-[11px] leading-5 text-[#817787]">아래 내용을 바탕으로 자료를 확인한 뒤, 본인이 찾은 정보와 의견을 추가해 주세요.</p><pre className="mt-3 whitespace-pre-wrap font-sans text-xs leading-6 text-[#665174]">{researchPlan}</pre></div>}
+      <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={9} placeholder="확인한 정보, 직접 경험, 공식 자료의 내용, 실제 후기에서 발견한 공통점 등을 적어주세요." className="w-full rounded-xl border p-4 text-sm leading-7"/>
       <div className="rounded-xl border border-dashed p-4"><h4 className="text-sm font-semibold">사진 첨부 (최대 12장)</h4><input type="file" accept="image/*" multiple disabled={busy||photos.length>=12} onChange={e=>{void addPhotos(e.target.files);e.currentTarget.value="";}} className="mt-3 w-full text-xs"/>{photos.map((p,i)=><div key={p.id} className="mt-3 flex items-center gap-3 border-t pt-3"><img src={p.src} alt="" className="h-16 w-16 rounded-lg object-cover"/><div className="min-w-0 flex-1"><input value={p.caption} onChange={e=>setPhotos(old=>old.map((x,j)=>j===i?{...x,caption:e.target.value}:x))} placeholder="선택: 사진 설명" className="w-full rounded border p-2 text-xs"/><div className="mt-2 flex gap-3 text-xs"><button onClick={()=>movePhoto(i,-1)} disabled={!i}>위로</button><button onClick={()=>movePhoto(i,1)} disabled={i===photos.length-1}>아래로</button><button onClick={()=>setPhotos(old=>old.filter((_,j)=>j!==i))} className="text-rose-700">삭제</button></div></div></div>)}</div>
       <button onClick={()=>setShowTips(v=>!v)} className="text-xs font-semibold text-[#665174]">{showTips?"▾":"▸"} 이번 글 작성 팁 (선택)</button>{showTips&&<textarea value={tips} onChange={e=>setTips(e.target.value)} rows={3} placeholder="이번 글에만 적용할 요청사항" className="w-full rounded-xl border p-3 text-sm"/>}
       <div className="flex flex-wrap gap-2"><button onClick={()=>setStep(1)} disabled={generating} className="rounded-xl border px-4 py-3 text-sm disabled:opacity-50">← 이전</button><button onClick={()=>void sendToChatGPT()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl border border-[#665174] px-4 py-3 text-sm font-semibold text-[#665174] disabled:opacity-50">ChatGPT로 보내기</button><button onClick={()=>void generateWithGemini()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl border border-[#4285F4] px-4 py-3 text-sm font-semibold text-[#3367D6] disabled:opacity-50">Gemini로 작성</button><button onClick={()=>void generateDraft()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">{generating ? "AI가 원고를 작성하고 있어요..." : "OpenAI API로 작성"}</button></div>{externalStatus && <p role="status" className="rounded-lg bg-[#F5F1F6] p-3 text-xs leading-5 text-[#665174]">{externalStatus}</p>}{externalPrompt && <textarea readOnly value={externalPrompt} rows={8} className="w-full rounded-xl border p-3 text-xs leading-5" onFocus={e=>e.currentTarget.select()}/>}
