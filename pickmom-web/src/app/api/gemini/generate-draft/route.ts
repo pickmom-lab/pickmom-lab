@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
     `사진 설명(실제 이미지 분석 결과가 아님):\n${photos}`
   ].filter(Boolean).join("\n\n");
 
-  const primaryModel = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
-  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL?.trim() || "gemini-3.7-flash";
+  const primaryModel = process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite";
+  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL?.trim() || "gemini-3.6-flash";
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const requestModel = async (model: string) => {
@@ -104,10 +104,10 @@ export async function POST(request: NextRequest) {
     let activeModel = primaryModel;
     let { response, result } = await requestModel(primaryModel);
 
-    // 503 indicates temporary model capacity pressure. After bounded retries,
-    // try the configured fallback model once (default: Gemini 3.7 Flash).
-    if (response.status === 503 && fallbackModel && fallbackModel !== primaryModel) {
-      console.warn("Gemini primary model remained unavailable; trying fallback model:", fallbackModel);
+    // 429 indicates model rate-limit exhaustion; 503 indicates temporary capacity pressure.
+    // Try the configured fallback model for either condition.
+    if ((response.status === 429 || response.status === 503) && fallbackModel && fallbackModel !== primaryModel) {
+      console.warn("Gemini primary model unavailable; trying fallback model:", fallbackModel);
       activeModel = fallbackModel;
       ({ response, result } = await requestModel(fallbackModel));
     }
