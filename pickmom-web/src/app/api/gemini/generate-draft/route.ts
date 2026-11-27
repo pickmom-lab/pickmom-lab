@@ -55,38 +55,73 @@ export async function POST(request: NextRequest) {
     `사진 설명(실제 이미지 분석 결과가 아님):\n${photos}`
   ].filter(Boolean).join("\n\n");
 
+  const primaryModel = process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash";
+  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL?.trim() || "gemini-3.7-flash";
+  const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const requestModel = async (model: string) => {
+    let response: Response | undefined;
+    let result: any;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+          method: "POST",
+          headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            input,
+            system_instruction: systemInstruction,
+            response_format: {
+              type: "text",
+              mime_type: "application/json",
+              schema: {
+                type: "object",
+                properties: { title: { type: "string" }, body: { type: "string" } },
+                required: ["title", "body"],
+                additionalProperties: false
+              }
+            },
+            store: false,
+            generation_config: { max_output_tokens: 5000 }
+          }),
+          cache: "no-store"
+        });
+        result = await response.json();
+      } catch (error) {
+        if (attempt < 2) {
+          await wait(attempt === 0 ? 1500 : 3500);
+          continue;
+        }
+        throw error;
+      }
+      if (response.ok || response.status !== 503 || attempt === 2) break;
+      await wait(attempt === 0 ? 1500 : 3500);
+    }
+    return { response: response!, result };
+  };
+
   try {
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-      method: "POST",
-      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: process.env.GEMINI_MODEL?.trim() || "gemini-3.8-flash",
-        input,
-        system_instruction: systemInstruction,
-        response_format: {
-          type: "text",
-          mime_type: "application/json",
-          schema: {
-            type: "object",
-            properties: { title: { type: "string" }, body: { type: "string" } },
-            required: ["title", "body"],
-            additionalProperties: false
-          }
-        },
-        store: false,
-        generation_config: { max_output_tokens: 5000 }
-      }),
-      cache: "no-store"
-    });
-    const result = await response.json();
+    let activeModel = primaryModel;
+    let { response, result } = await requestModel(primaryModel);
+
+    // 503 indicates temporary model capacity pressure. After bounded retries,
+    // try the configured fallback model once (default: Gemini 3.7 Flash).
+    if (response.status === 503 && fallbackModel && fallbackModel !== primaryModel) {
+      console.warn("Gemini primary model remained unavailable; trying fallback model:", fallbackModel);
+      activeModel = fallbackModel;
+      ({ response, result } = await requestModel(fallbackModel));
+    }
+
     if (!response.ok) {
-      console.error("Gemini Interactions API error:", { status: response.status, code: result?.error?.status, message: result?.error?.message });
+      console.error("Gemini Interactions API error:", { model: activeModel, status: response.status, code: result?.error?.status, message: result?.error?.message });
       const status = response.status === 429 ? 429 : 502;
       const message = response.status === 401 || response.status === 403
         ? "Gemini API 키 또는 Google AI Studio 프로젝트 권한을 확인해 주세요."
         : response.status === 429
           ? "Gemini API 사용 한도 또는 결제·요청 제한을 확인해 주세요."
-          : "Gemini 원고 생성 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+          : response.status === 503
+            ? "Gemini 서버가 혼잡합니다. 잠시 후 다시 시도해 주세요."
+            : "Gemini 원고 생성 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.";
       return NextResponse.json({ error: message }, { status });
     }
 
@@ -106,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
     if (!draft.title?.trim() || !draft.body?.trim()) return NextResponse.json({ error: "Gemini가 제목 또는 본문을 완성하지 못했습니다." }, { status: 502 });
 
-    return NextResponse.json({ title: draft.title.trim(), body: draft.body.trim(), model: result.model || process.env.GEMINI_MODEL || "gemini-3.8-flash" }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ title: draft.title.trim(), body: draft.body.trim(), model: result.model || activeModel }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Gemini draft generation request failed:", error);
     return NextResponse.json({ error: "Gemini API에 연결하지 못했습니다. 네트워크 설정을 확인해 주세요." }, { status: 502 });
