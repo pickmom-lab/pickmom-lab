@@ -8,6 +8,7 @@ type Photo = { id: string; src: string; caption: string };
 type Props = {
   initialKeyword?: string;
   initialCategory?: Category;
+  initialNotes?: string;
   initialPhotos?: string[];
   initialData?: string;
   onSave: (v: { title: string; keyword: string; category: Category; purpose: string; date: string; draft: string; photos: string[]; formData: string; status: "원고 작성" | "발행 준비" }) => void;
@@ -41,7 +42,7 @@ const compressPhoto = (file: File) => new Promise<string>((resolve) => {
   };
   reader.readAsDataURL(file);
 });
-export default function WritingStudio({ initialKeyword = "", initialCategory, initialPhotos, initialData, onSave }: Props) {
+export default function WritingStudio({ initialKeyword = "", initialCategory, initialNotes = "", initialPhotos, initialData, onSave }: Props) {
   const [keyword, setKeyword] = useState(initialKeyword);
   const [category, setCategory] = useState<Category>(initialCategory || detect(initialKeyword));
   const [purpose, setPurpose] = useState<Purpose>(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보");
@@ -59,8 +60,8 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
   const [externalStatus, setExternalStatus] = useState("");
   const [externalPrompt, setExternalPrompt] = useState("");
   useEffect(() => {
-    if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(initialCategory || detect(initialKeyword)); setPurpose(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보"); }
-  }, [initialKeyword, initialCategory, initialData]);
+    if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(initialCategory || detect(initialKeyword)); setPurpose(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보"); setNotes(initialNotes); }
+  }, [initialKeyword, initialCategory, initialNotes, initialData]);
   useEffect(() => {
     if (!initialData) return;
     try {
