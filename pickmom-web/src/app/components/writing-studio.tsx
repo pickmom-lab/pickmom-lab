@@ -1,40 +1,104 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
-type C="맛집·카페"|"여행·체험"|"교육 정보"|"리빙·제품"|"쇼핑·제품"|"부동산·주거"|"생활·정책";
-type P="직접 경험·방문 후기"|"비교·분석"|"정보 전달"|"추천·소개"|"문제 해결·노하우";
-type Photo={id:string;src:string;caption:string};
-type F={key:string;label:string;multi?:boolean};
-type Props={initialKeyword?:string;initialData?:string;onSave:(v:{title:string;keyword:string;category:C;purpose:P;date:string;draft:string;photos:string[];formData:string;status:"원고 작성"|"발행 준비"})=>void};
-const cats:C[]=["맛집·카페","여행·체험","교육 정보","쇼핑·제품","리빙·제품","부동산·주거","생활·정책"];
-const purposes:P[]=["직접 경험·방문 후기","비교·분석","정보 전달","추천·소개","문제 해결·노하우"];
-const cf:Record<C,F[]>={
-"맛집·카페":[["visitDate","방문 날짜"],["매장명","매장명 및 위치"],["reason","방문 이유"],["menu","주문 메뉴와 메뉴별 가격"],["taste","실제 먹어본 후기"],["pros","좋았던 점과 아쉬운 점"],["parking","주차 및 대기 정보"],["again","재방문 의사"]].map(x=>({key:x[0],label:x[1],multi:["reason","menu","taste","pros","parking"].includes(x[0])})),
-"여행·체험":["방문 장소","방문 날짜","동행 인원 및 아이 연령","예약 및 이용 방법","이용 시설과 프로그램","실제 경험과 아이들의 반응","좋았던 점과 아쉬운 점","비용 및 주차 정보"].map((x,i)=>({key:"t"+i,label:x,multi:[3,4,5,6,7].includes(i)})),
-"교육 정보":["교육 주제","대상 연령","관련 기관 및 교육 과정","핵심 정보","준비 사항","일정 및 비용","공식 자료 및 참고 링크"].map((x,i)=>({key:"e"+i,label:x,multi:[3,4,6].includes(i)})),
-"리빙·제품":["제품명 및 종류","주요 특징 및 사양","가격 및 구매처","사용 상황과 기간","실제 사용 후기","장점과 아쉬운 점","추천 대상"].map((x,i)=>({key:"p"+i,label:x,multi:[1,3,4,5].includes(i)})),
- "쇼핑·제품":["제품명 및 브랜드","추천·구매 대상","가격 및 판매처","주요 특징과 구성","실제 사용 경험 또는 후기","장점과 아쉬운 점","가격·구성 비교 및 구매 팁"].map((x,i)=>({key:"s"+i,label:x,multi:[1,3,4,5,6].includes(i)})),
-"부동산·주거":["지역 및 주거 유형","확인할 제도·매물·주제","주요 조건 및 자격","비용·보증금·관리비","절차 및 일정","공식 자료 및 참고 링크"].map((x,i)=>({key:"h"+i,label:x,multi:[2,4,5].includes(i)})),
-"생활·정책":["정책·지원 제도명","지원 대상 및 자격","지원 내용 및 금액","신청 기간 및 일정","신청 방법 및 준비 서류","주의사항 및 확인할 점","공식 자료 및 참고 링크"].map((x,i)=>({key:"l"+i,label:x,multi:[2,4,5,6].includes(i)}))
+
+import { useEffect, useMemo, useState } from "react";
+
+type Category = "맛집·카페" | "여행·체험" | "교육 정보" | "리빙·제품" | "쇼핑·제품" | "부동산·주거" | "생활·정책";
+type Purpose = "정보" | "실사용 후기" | "비교" | "문제 해결";
+type Photo = { id: string; src: string; caption: string };
+type Props = {
+  initialKeyword?: string;
+  initialData?: string;
+  onSave: (v: { title: string; keyword: string; category: Category; purpose: string; date: string; draft: string; photos: string[]; formData: string; status: "원고 작성" | "발행 준비" }) => void;
 };
-const pf:Record<P,F[]>={"직접 경험·방문 후기":[{key:"background",label:"방문·구매·이용 배경",multi:true},{key:"takeaway",label:"기억에 남는 점과 총평",multi:true}],"비교·분석":[{key:"items",label:"비교 대상",multi:true},{key:"criteria",label:"비교 기준",multi:true},{key:"compare",label:"차이와 장단점",multi:true},{key:"conclusion",label:"상황별 선택 기준",multi:true}],"정보 전달":[{key:"core",label:"전달할 핵심 내용",multi:true},{key:"checked",label:"정보 확인 기준일"},{key:"sources",label:"출처별 확인 내용",multi:true}],"추천·소개":[{key:"target",label:"추천 대상"},{key:"why",label:"추천 이유",multi:true},{key:"alternative",label:"함께 고려할 대안",multi:true}],"문제 해결·노하우":[{key:"problem",label:"독자가 겪는 문제·상황",multi:true},{key:"solution",label:"해결 방법 및 단계",multi:true},{key:"caution",label:"주의사항과 실패 방지 팁",multi:true}]};
-function detect(s:string):C{if(/맛집|식당|카페|디저트|빵|케이크|쿠키|국수|음식/.test(s))return"맛집·카페";if(/여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(s))return"여행·체험";if(/영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(s))return"교육 정보";if(/지원금|정책|신청|정부|할인|혜택|공휴일/.test(s))return"생활·정책";if(/부동산|아파트|전세|월세|청약|이사|주거/.test(s))return"부동산·주거";if(/선물|추천|구매|가격|제품|상품|쇼핑/.test(s))return"쇼핑·제품";return"리빙·제품";}
-function fresh(k:string){const c=detect(k);return{keyword:k,title:k,category:c,purpose:(c==="맛집·카페"||c==="여행·체험"?"직접 경험·방문 후기":"정보 전달") as P,date:new Date().toISOString().slice(0,10),values:{} as Record<string,string>,photos:[] as Photo[]};}
-export default function WritingStudio({initialKeyword="",initialData,onSave}:Props){
-const [d,S]=useState<any>(()=>{try{return initialData?JSON.parse(initialData):fresh(initialKeyword)}catch{return fresh(initialKeyword)}});const [step,T]=useState<1|2|3>(1);const [draft,D]=useState("");const [busy,B]=useState(false);
-useEffect(()=>{if(initialData){try{S(JSON.parse(initialData));T(3)}catch{}}else if(initialKeyword)S((v:any)=>({...v,keyword:initialKeyword,title:initialKeyword,category:detect(initialKeyword)}))},[initialKeyword,initialData]);
-useEffect(()=>{try{localStorage.setItem("pickmom-writing-draft-v1",JSON.stringify(d))}catch{}},[d]);
-const fields=useMemo(()=>[...cf[d.category as C],...pf[d.purpose as P]],[d.category,d.purpose]);
-const patch=(p:any)=>S((v:any)=>({...v,...p}));const val=(k:string,v:string)=>S((x:any)=>({...x,values:{...x.values,[k]:v}}));
- const compose=()=>{
-  const sections=fields.map(f=>d.values?.[f.key]?(`## ${f.label}\n${d.values[f.key]}`):"").filter(Boolean).join("\n\n");
-  const captions=(d.photos||[]).map((p:Photo,i:number)=>`${i+1}. ${p.caption}`).join("\n");
-  return [`# ${d.title||d.keyword}`,`${d.keyword} 관련 내용을 ${d.purpose} 관점에서 정리했어요.`,sections,"## 사진 캡션",captions,"## 마무리","변동 가능한 정보는 발행 전에 공식 자료로 확인해 주세요."].filter(Boolean).join("\n\n");
- };
-const add=async(files:FileList|null)=>{if(!files)return;B(true);const arr=await Promise.all(Array.from(files).slice(0,12-(d.photos?.length||0)).map(f=>new Promise<Photo>(resolve=>{const r=new FileReader();r.onload=()=>resolve({id:Math.random().toString(36),src:String(r.result),caption:""});r.readAsDataURL(f)})));S((v:any)=>({...v,photos:[...v.photos,...arr]}));B(false)};
-const move=(i:number,delta:number)=>S((v:any)=>{const a=[...v.photos],j=i+delta;if(j<0||j>=a.length)return v;[a[i],a[j]]=[a[j],a[i]];return{...v,photos:a}});
-const save=(status:"원고 작성"|"발행 준비")=>onSave({title:d.title||d.keyword,keyword:d.keyword,category:d.category,purpose:d.purpose,date:d.date,draft,photos:d.photos.map((p:Photo)=>p.src),formData:JSON.stringify(d),status});
-return <section className="mx-auto max-w-4xl space-y-5 pb-8"><div className="rounded-2xl border bg-white p-5"><div className="flex justify-between"><h2 className="font-semibold">키워드에서 발행까지</h2><span className="text-xs">STEP {step}/3</span></div><div className="mt-3 grid grid-cols-3 gap-2">{["키워드·목적","맞춤 입력","원고·발행"].map((x,i)=><button key={x} onClick={()=>T((i+1) as 1|2|3)} className={"rounded-lg p-2 text-xs "+(step===i+1?"bg-[#665174] text-white":"bg-[#F5F1F6]")}>{i+1}. {x}</button>)}</div></div>
-{step===1&&<div className="rounded-2xl border bg-white p-5"><h3 className="font-semibold">1. 키워드와 카테고리</h3><label className="mt-4 block text-xs">핵심 키워드<input value={d.keyword} onChange={e=>patch({keyword:e.target.value,title:d.title===d.keyword?e.target.value:d.title,category:detect(e.target.value)})} className="mt-2 w-full rounded-xl border p-3 text-sm" placeholder="예: 고터 맛집"/></label><label className="mt-4 block text-xs">자동 분류 · 직접 변경 가능<select value={d.category} onChange={e=>patch({category:e.target.value})} className="mt-2 w-full rounded-xl border bg-white p-3 text-sm">{cats.map(c=><option key={c}>{c}</option>)}</select></label><p className="mt-4 text-xs">글 작성 목적</p><div className="mt-2 grid gap-2 sm:grid-cols-2">{purposes.map(p=><button key={p} onClick={()=>patch({purpose:p})} className={"rounded-xl border p-3 text-left text-sm "+(d.purpose===p?"bg-[#F7F3F9] border-[#8D789C] font-semibold":"")}>{p}</button>)}</div><label className="mt-4 block text-xs">글 제목<input value={d.title} onChange={e=>patch({title:e.target.value})} className="mt-2 w-full rounded-xl border p-3 text-sm"/></label><button disabled={!d.keyword.trim()} onClick={()=>T(2)} className="mt-5 rounded-xl bg-[#665174] px-5 py-3 text-sm text-white">맞춤 입력 화면 →</button></div>}
-{step===2&&<><div className="rounded-2xl border bg-white p-5"><h3 className="font-semibold">2. {d.category} · {d.purpose}</h3><label className="mt-4 block text-xs">작성 기준일<input type="date" value={d.date} onChange={e=>patch({date:e.target.value})} className="mt-2 w-full rounded-xl border p-3"/></label><div className="mt-4 grid gap-4 sm:grid-cols-2">{fields.map(f=><label key={f.key} className="block text-xs">{f.label}{f.multi?<textarea rows={4} value={d.values?.[f.key]||""} onChange={e=>val(f.key,e.target.value)} className="mt-2 w-full rounded-xl border p-3 text-sm"/>:<input value={d.values?.[f.key]||""} onChange={e=>val(f.key,e.target.value)} className="mt-2 w-full rounded-xl border p-3 text-sm"/>}</label>)}</div></div><div className="rounded-2xl border bg-white p-5"><h3 className="font-semibold">사진 첨부 (최대 12장)</h3><input type="file" accept="image/*" multiple disabled={busy} onChange={e=>{void add(e.target.files);e.currentTarget.value=""}} className="mt-3 w-full text-xs"/>{(d.photos||[]).map((p:Photo,i:number)=><div key={p.id} className="mt-3 flex gap-3 border-b py-3"><img src={p.src} alt="" className="h-20 w-20 rounded-lg object-cover"/><div className="flex-1"><input value={p.caption} placeholder="사진 설명 또는 캡션" onChange={e=>S((v:any)=>({...v,photos:v.photos.map((z:Photo,j:number)=>j===i?{...z,caption:e.target.value}:z)}))} className="w-full rounded border p-2 text-xs"/><div className="mt-2 flex gap-2"><button onClick={()=>move(i,-1)} disabled={!i} className="text-xs">위로</button><button onClick={()=>move(i,1)} disabled={i===d.photos.length-1} className="text-xs">아래로</button><button onClick={()=>patch({photos:d.photos.filter((_:Photo,j:number)=>j!==i)})} className="text-xs text-rose-700">삭제</button></div></div></div>)}</div><div className="flex justify-between"><button onClick={()=>T(1)} className="rounded-xl border px-4 py-3 text-sm">← 이전</button><button onClick={()=>{D(compose());T(3)}} className="rounded-xl bg-[#665174] px-5 py-3 text-sm text-white">원고 구성 →</button></div></>}
-{step===3&&<div className="rounded-2xl border bg-white p-5"><div className="flex justify-between"><div><h3 className="font-semibold">3. 원고 확인 및 발행</h3><p className="mt-1 text-xs text-gray-500">{d.keyword} · {d.category} · {d.purpose} · 사진 {d.photos.length}장</p></div><button onClick={()=>T(2)} className="text-xs">← 입력 수정</button></div><p className="mt-3 rounded-lg bg-[#F8F5F9] p-3 text-xs">네이버 자동 발행은 연결되어 있지 않습니다. 본문 복사 후 직접 발행해 주세요.</p><textarea value={draft} onChange={e=>D(e.target.value)} rows={22} className="mt-4 w-full rounded-xl border p-4 text-sm leading-7"/>{d.photos.map((p:Photo,i:number)=><div key={p.id} className="mt-2 flex items-center gap-2 text-xs"><img src={p.src} alt="" className="h-12 w-12 rounded object-cover"/>{i+1}. {p.caption}</div>)}<div className="mt-5 flex flex-wrap gap-2"><button onClick={()=>save("원고 작성")} className="rounded-xl border px-4 py-3 text-sm">임시 저장</button><button onClick={()=>save("발행 준비")} className="rounded-xl bg-[#665174] px-4 py-3 text-sm text-white">발행 준비 저장</button><button onClick={()=>navigator.clipboard?.writeText(draft)} className="rounded-xl border px-4 py-3 text-sm">본문 복사</button><a href="https://blog.naver.com/" target="_blank" rel="noreferrer" className="rounded-xl border px-4 py-3 text-sm">네이버 블로그 열기</a></div></div>}</section>;
+const categories: Category[] = ["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "쇼핑·제품", "생활·정책", "부동산·주거"];
+const purposes: Purpose[] = ["정보", "실사용 후기", "비교", "문제 해결"];
+const detect = (s: string): Category => /맛집|식당|카페|디저트|빵|케이크|쿠키|국수|음식/.test(s) ? "맛집·카페" : /여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(s) ? "여행·체험" : /영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(s) ? "교육 정보" : /지원금|정책|신청|정부|할인|혜택|공휴일/.test(s) ? "생활·정책" : /부동산|아파트|전세|월세|청약|이사|주거/.test(s) ? "부동산·주거" : /선물|추천|구매|가격|제품|상품|쇼핑/.test(s) ? "쇼핑·제품" : "리빙·제품";
+const today = () => new Date().toISOString().slice(0, 10);
+export default function WritingStudio({ initialKeyword = "", initialData, onSave }: Props) {
+  const [keyword, setKeyword] = useState(initialKeyword);
+  const [category, setCategory] = useState<Category>(detect(initialKeyword));
+  const [purpose, setPurpose] = useState<Purpose>(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보");
+  const [date, setDate] = useState(today());
+  const [notes, setNotes] = useState("");
+  const [title, setTitle] = useState(initialKeyword);
+  const [draft, setDraft] = useState("");
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [tips, setTips] = useState("");
+  const [showTips, setShowTips] = useState(false);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!initialData) return;
+    try {
+      const d = JSON.parse(initialData);
+      setKeyword(d.keyword || initialKeyword);
+      setTitle(d.title || d.keyword || initialKeyword);
+      setCategory(d.category || detect(d.keyword || initialKeyword));
+      setPurpose(d.purpose === "직접 경험·방문 후기" ? "실사용 후기" : d.purpose === "비교·분석" ? "비교" : d.purpose === "문제 해결·노하우" ? "문제 해결" : "정보");
+      setDate(d.date || today());
+      setNotes(d.notes || Object.values(d.values || {}).filter(Boolean).join("\n"));
+      setPhotos((d.photos || []).map((p: any, i: number) => typeof p === "string" ? { id: String(i), src: p, caption: "" } : p));
+      setStep(3);
+    } catch { /* Keep a fresh editor if legacy data cannot be parsed. */ }
+  }, [initialData, initialKeyword]);
+  const titleIdeas = useMemo(() => {
+    const k = keyword.trim() || "주제";
+    return purpose === "실사용 후기"
+      ? [`${k} 직접 이용해 본 후기와 방문 전 알아둘 점`, `${k} 솔직 후기｜좋았던 점과 아쉬웠던 점`, `${k} 방문 기록, 가격·주차·이용 정보 정리`]
+      : purpose === "비교"
+      ? [`${k} 비교｜차이점과 선택 기준 정리`, `${k} 무엇이 다를까? 장단점 한눈에 보기`, `${k} 비교해 보니, 내게 맞는 선택은?`]
+      : purpose === "문제 해결"
+      ? [`${k} 해결 방법과 꼭 확인할 사항`, `${k} 막막할 때 확인할 순서와 실제 팁`, `${k} 실수 줄이는 방법, 단계별 정리`]
+      : [`${k} 핵심 정보와 꼭 알아둘 내용`, `${k} 일정·비용·조건 한 번에 정리`, `${k} 처음 알아보는 사람을 위한 안내`];
+  }, [keyword, purpose]);
+  const addPhotos = async (files: FileList | null) => {
+    if (!files) return;
+    setBusy(true);
+    const added = await Promise.all(Array.from(files).slice(0, 12 - photos.length).map(file => new Promise<Photo>(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ id: `${Date.now()}-${Math.random()}`, src: String(reader.result), caption: "" });
+      reader.readAsDataURL(file);
+    })));
+    setPhotos(old => [...old, ...added]);
+    setBusy(false);
+  };
+  const movePhoto = (i: number, delta: number) => setPhotos(old => {
+    const next = [...old], j = i + delta;
+    if (j < 0 || j >= next.length) return old;
+    [next[i], next[j]] = [next[j], next[i]];
+    return next;
+  });
+  const save = (status: "원고 작성" | "발행 준비") => {
+    const data = { keyword, title, category, purpose, date, notes, tips, photos };
+    onSave({ title: title || keyword, keyword, category, purpose, date, draft, photos: photos.map(p => p.src), formData: JSON.stringify(data), status });
+  };
+  return <section className="mx-auto max-w-4xl space-y-5 pb-8">
+    <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
+      <div className="flex items-center justify-between"><div><p className="text-xs font-semibold text-[#80678F]">PICKMOM LAB · WRITING FLOW</p><h2 className="mt-1 font-semibold">키워드 조사부터 원고 완성까지</h2></div><span className="text-xs text-[#918995]">STEP {step}/3</span></div>
+      <div className="mt-4 grid grid-cols-3 gap-2">{["주제·유형", "내 경험·자료", "원고 편집"].map((x,i)=><button key={x} onClick={()=>setStep((i+1) as 1|2|3)} className={`rounded-lg p-2.5 text-xs font-semibold ${step===i+1?"bg-[#665174] text-white":"bg-[#F5F1F6] text-[#80678F]"}`}>{i+1}. {x}</button>)}</div>
+    </div>
+    {step===1 && <div className="rounded-2xl border bg-white p-5 md:p-6">
+      <h3 className="font-semibold">어떤 글을 쓸까요?</h3>
+      <label className="mt-4 block text-xs text-[#817787]">핵심 키워드<input value={keyword} onChange={e=>{setKeyword(e.target.value);if(!title||title===keyword)setTitle(e.target.value);}} placeholder="예: 서울 머랭롤 맛집" className="mt-2 w-full rounded-xl border p-3 text-sm"/></label>
+      <label className="mt-4 block text-xs text-[#817787]">카테고리<select value={category} onChange={e=>setCategory(e.target.value as Category)} className="mt-2 w-full rounded-xl border bg-white p-3 text-sm">{categories.map(x=><option key={x}>{x}</option>)}</select></label>
+      <p className="mt-4 text-xs text-[#817787]">콘텐츠 유형</p><div className="mt-2 grid grid-cols-2 gap-2">{purposes.map(x=><button key={x} onClick={()=>setPurpose(x)} className={`rounded-xl border p-3 text-sm ${purpose===x?"border-[#8D789C] bg-[#F7F3F9] font-semibold text-[#665174]":""}`}>{x}</button>)}</div>
+      <button disabled={!keyword.trim()} onClick={()=>setStep(2)} className="mt-5 rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">다음 단계 →</button>
+    </div>}
+    {step===2 && <div className="space-y-4 rounded-2xl border bg-white p-5 md:p-6">
+      <div><h3 className="font-semibold">경험과 알고 있는 내용을 편하게 적어주세요.</h3><p className="mt-1 text-xs leading-5 text-[#918995]">항목별로 나눠 입력할 필요 없습니다. 방문 과정, 좋았던 점, 아쉬운 점, 가격, 주소, 주차 등 기억나는 내용을 한 번에 적으면 AI가 글의 유형에 맞춰 정리하도록 설계합니다.</p></div>
+      <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={9} placeholder="예: 어디를 방문했는지, 왜 선택했는지, 실제로 어땠는지, 독자에게 알려주고 싶은 점을 자유롭게 적어주세요." className="w-full rounded-xl border p-4 text-sm leading-7"/>
+      <div className="rounded-xl border border-dashed p-4"><h4 className="text-sm font-semibold">사진 첨부 (최대 12장)</h4><input type="file" accept="image/*" multiple disabled={busy||photos.length>=12} onChange={e=>{void addPhotos(e.target.files);e.currentTarget.value="";}} className="mt-3 w-full text-xs"/>{photos.map((p,i)=><div key={p.id} className="mt-3 flex items-center gap-3 border-t pt-3"><img src={p.src} alt="" className="h-16 w-16 rounded-lg object-cover"/><div className="min-w-0 flex-1"><input value={p.caption} onChange={e=>setPhotos(old=>old.map((x,j)=>j===i?{...x,caption:e.target.value}:x))} placeholder="선택: 사진 설명" className="w-full rounded border p-2 text-xs"/><div className="mt-2 flex gap-3 text-xs"><button onClick={()=>movePhoto(i,-1)} disabled={!i}>위로</button><button onClick={()=>movePhoto(i,1)} disabled={i===photos.length-1}>아래로</button><button onClick={()=>setPhotos(old=>old.filter((_,j)=>j!==i))} className="text-rose-700">삭제</button></div></div></div>)}</div>
+      <button onClick={()=>setShowTips(v=>!v)} className="text-xs font-semibold text-[#665174]">{showTips?"▾":"▸"} 이번 글 작성 팁 (선택)</button>{showTips&&<textarea value={tips} onChange={e=>setTips(e.target.value)} rows={3} placeholder="이번 글에만 적용할 요청사항" className="w-full rounded-xl border p-3 text-sm"/>}
+      <div className="flex gap-2"><button onClick={()=>setStep(1)} className="rounded-xl border px-4 py-3 text-sm">← 이전</button><button onClick={()=>setStep(3)} className="rounded-xl bg-[#665174] px-5 py-3 text-sm text-white">원고 편집 화면 →</button></div>
+      <p className="text-[10px] leading-5 text-[#A49AA9]">현재 이 버전에는 외부 AI 조사·작성 API가 아직 연결되지 않았습니다. 실제 검색·출처 검증·AI 원고 생성이 연결되기 전에는 생성 완료나 검증 완료로 표시하지 않습니다.</p>
+    </div>}
+    {step===3 && <div className="rounded-2xl border bg-white p-5 md:p-6">
+      <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">통합 원고 편집기</h3><p className="mt-1 text-xs text-[#918995]">제목과 본문을 한 화면에서 수정합니다.</p></div><button onClick={()=>setStep(2)} className="text-xs text-[#665174]">← 입력 수정</button></div>
+      <div className="mt-4"><p className="mb-2 text-xs font-semibold">제목 후보</p><div className="space-y-2">{titleIdeas.map((x,i)=><button key={x} onClick={()=>setTitle(x)} className={`block w-full rounded-lg border p-3 text-left text-xs leading-5 ${title===x?"border-[#8D789C] bg-[#F7F3F9]":"border-[#ECE8EA]"}`}>{i+1}. {x}</button>)}</div><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="직접 제목 입력" className="mt-3 w-full rounded-xl border p-3 text-sm"/></div>
+      <label className="mt-4 block text-xs font-semibold">본문<textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={20} placeholder="조사와 원고 생성 API가 연결되면 이곳에 근거가 포함된 초안이 생성됩니다. 현재는 직접 작성하거나 붙여넣어 편집할 수 있습니다." className="mt-2 w-full rounded-xl border p-4 text-sm leading-7 font-normal"/></label>
+      <div className="mt-4 rounded-xl bg-[#F8F5F9] p-4"><p className="text-xs font-semibold text-[#665174]">SEO 최종 확인 항목</p><ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-[#817787]"><li>핵심 키워드와 검색 의도에 답하고 있는가</li><li>주소·가격·영업시간 등 변동 정보의 출처와 확인일을 표시했는가</li><li>실제 경험과 외부에서 확인한 사실을 구분했는가</li><li>연관 표현이 자연스럽고 반복이 과도하지 않은가</li><li>사진 설명과 문단 구성이 독자의 이해를 돕는가</li></ul></div>
+      <label className="mt-4 block text-xs text-[#817787]">발행 예정일<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-2 w-full rounded-xl border p-3 text-sm"/></label>
+      <div className="mt-5 flex flex-wrap gap-2"><button onClick={()=>save("원고 작성")} className="rounded-xl border px-4 py-3 text-sm">임시 저장</button><button onClick={()=>save("발행 준비")} className="rounded-xl bg-[#665174] px-4 py-3 text-sm text-white">발행 준비 저장</button><button onClick={()=>navigator.clipboard?.writeText(draft)} className="rounded-xl border px-4 py-3 text-sm">본문 복사</button><a href="https://blog.naver.com/" target="_blank" rel="noreferrer" className="rounded-xl border px-4 py-3 text-sm">네이버 블로그 열기</a></div>
+    </div>}
+  </section>;
 }
