@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const trends = [
   { keyword: "서울 크리스마스 마켓", category: "여행·나들이", change: "시즌 주목", intent: "일정·장소·주차" },
@@ -47,22 +47,13 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
   const [loadingCounts, setLoadingCounts] = useState(false);
   const [apiError, setApiError] = useState("");
 
-  useEffect(() => {
-    if (initialKeyword.trim()) {
-      setKeyword(initialKeyword);
-      setTab("analyze");
-      setSearched(false);
-      setSelectedKeyword("");
-    }
-  }, [initialKeyword]);
-
   const rows = useMemo(() => makeKeywordRows(keyword), [keyword]);
   const copy = (value: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) navigator.clipboard.writeText(value);
     setToast("복사했어요.");
   };
-  const runAnalysis = async () => {
-    const query = keyword.trim();
+  const runAnalysis = useCallback(async (inputKeyword: string) => {
+    const query = inputKeyword.trim();
     if (!query) return;
     setSearched(true);
     setSelectedKeyword("");
@@ -87,7 +78,17 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
     if (failures === words.length) setApiError("네이버 API 연결에 실패했어요. Vercel 환경변수와 API 권한을 확인해 주세요.");
     else if (failures > 0) setApiError(failures + "개 키워드의 문서 수를 불러오지 못했어요.");
     setLoadingCounts(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    const query = initialKeyword.trim();
+    if (query) {
+      setKeyword(query);
+      setTab("analyze");
+      setSelectedKeyword("");
+      runAnalysis(query);
+    }
+  }, [initialKeyword, runAnalysis]);
 
   return (
     <section className="mx-auto max-w-6xl space-y-5 pb-8">
@@ -130,8 +131,8 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
             <h3 className="font-semibold">키워드 직접 발굴</h3>
             <p className="mt-1 text-xs text-[#A49AA9]">관심 있는 주제나 상품·장소를 입력해 추천 키워드와 연관 키워드를 확인하세요.</p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <input value={keyword} onChange={(e) => setKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && keyword.trim()) { setTab("analyze"); runAnalysis(); } }} placeholder="예: 아이와 겨울 여행, 초등 영어 교재" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
-              <button onClick={() => { setTab("analyze"); runAnalysis(); }} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">키워드 분석하기</button>
+              <input value={keyword} onChange={(e) => setKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && keyword.trim()) { setTab("analyze"); runAnalysis(keyword); } }} placeholder="예: 아이와 겨울 여행, 초등 영어 교재" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
+              <button onClick={() => { setTab("analyze"); runAnalysis(keyword); }} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">키워드 분석하기</button>
             </div>
           </div>
         </>
@@ -143,8 +144,8 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
             <h3 className="font-semibold">분석할 키워드</h3>
             <p className="mt-1 text-xs text-[#A49AA9]">처음 입력한 검색어를 확인하고, 필요하면 수정한 뒤 분석을 실행하세요.</p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setSearched(false); setSelectedKeyword(""); setDocumentCounts({}); setApiError(""); }} onKeyDown={(e) => { if (e.key === "Enter") runAnalysis(); }} placeholder="분석할 키워드 입력" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
-              <button onClick={runAnalysis} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">분석 실행</button>
+              <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setSearched(false); setSelectedKeyword(""); setDocumentCounts({}); setApiError(""); }} onKeyDown={(e) => { if (e.key === "Enter") runAnalysis(keyword); }} placeholder="분석할 키워드 입력" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
+              <button onClick={() => runAnalysis(keyword)} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">분석 실행</button>
             </div>
           </div>
 
