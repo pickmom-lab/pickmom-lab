@@ -96,6 +96,10 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [showIdeas, setShowIdeas] = useState(false);
+  const [topicMode, setTopicMode] = useState<"direct" | "popular" | "category" | null>(null);
+  const [directKeyword, setDirectKeyword] = useState("");
+  const [popularKeyword, setPopularKeyword] = useState("");
+  const [topicCategory, setTopicCategory] = useState<Category | "">("");
   const [selectedIdea, setSelectedIdea] = useState<number | null>(null);
   const [draftInput, setDraftInput] = useState<DraftInput>({
     topic: "", keyword: "", category: "리빙·제품", purpose: "경험 리뷰", notes: "", research: "",
@@ -239,11 +243,54 @@ export default function Home() {
 
           {page === "home" && (
             <>
-              <section className="mb-6 rounded-3xl bg-[#665174] px-6 py-7 text-white md:px-9 md:py-9">
-                <p className="text-[10px] tracking-[0.2em] text-[#E0D5E8]">PICKMOM BLOG STUDIO</p>
-                <h2 className="mt-3 text-2xl font-semibold leading-snug md:text-3xl">이번 주 블로그,<br className="sm:hidden" /> 5편을 차근차근.</h2>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-[#E6DDEB]">주제를 고르고, 내 경험을 더하고, 발행까지 관리해요. 지금은 블로그 운영에 필요한 기능에 집중합니다.</p>
-                <button onClick={() => navigate("writing")} className="mt-5 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#665174]">블로그 글 작성하기 →</button>
+              <section className="mb-7 rounded-3xl border border-[#EAE4ED] bg-white px-5 py-6 sm:px-7 sm:py-8">
+                <p className="text-[10px] font-semibold tracking-[0.2em] text-[#9A8AA4]">PICKMOM BLOG STUDIO</p>
+                <h2 className="mt-3 text-2xl font-semibold leading-snug text-[#332B38] sm:text-3xl">오늘의 발행 주제는?</h2>
+                <p className="mt-2 text-sm text-[#817787]">아래 세 가지 방법 중 하나로 주제를 선택하세요.</p>
+
+                <div className="mt-6 grid gap-3 lg:grid-cols-3">
+                  <button type="button" onClick={() => setTopicMode("direct")} className={`rounded-2xl border p-4 text-left transition ${topicMode === "direct" ? "border-[#80678F] bg-[#F8F4FA] ring-1 ring-[#80678F]" : "border-[#ECE8EA] bg-white hover:bg-[#FAF9FA]"}`}>
+                    <span className="text-xs font-semibold text-[#80678F]">① 키워드 직접 입력</span>
+                    <span className="mt-2 block text-sm font-medium text-[#39313E]">작성하고 싶은 키워드를 입력하세요.</span>
+                  </button>
+                  <button type="button" onClick={() => setTopicMode("popular")} className={`rounded-2xl border p-4 text-left transition ${topicMode === "popular" ? "border-[#80678F] bg-[#F8F4FA] ring-1 ring-[#80678F]" : "border-[#ECE8EA] bg-white hover:bg-[#FAF9FA]"}`}>
+                    <span className="text-xs font-semibold text-[#80678F]">② 요즘 인기 주제 키워드</span>
+                    <span className="mt-2 block text-sm font-medium text-[#39313E]">인기 키워드 중 하나를 선택</span>
+                  </button>
+                  <button type="button" onClick={() => setTopicMode("category")} className={`rounded-2xl border p-4 text-left transition ${topicMode === "category" ? "border-[#80678F] bg-[#F8F4FA] ring-1 ring-[#80678F]" : "border-[#ECE8EA] bg-white hover:bg-[#FAF9FA]"}`}>
+                    <span className="text-xs font-semibold text-[#80678F]">③ 카테고리 선택</span>
+                    <span className="mt-2 block text-sm font-medium text-[#39313E]">관심 분야 하나를 선택</span>
+                  </button>
+                </div>
+
+                {topicMode === "direct" && (
+                  <div className="mt-4">
+                    <label htmlFor="home-direct-keyword" className="mb-2 block text-xs font-medium text-[#716777]">작성할 키워드</label>
+                    <input id="home-direct-keyword" value={directKeyword} onChange={(e) => setDirectKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && directKeyword.trim()) startWriting(directKeyword.trim(), directKeyword.trim()); }} placeholder="예: 아이와 겨울여행" className="w-full rounded-xl border border-[#E6E0E8] bg-white px-4 py-3 text-sm outline-none focus:border-[#80678F]" />
+                  </div>
+                )}
+                {topicMode === "popular" && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-medium text-[#716777]">추천 키워드 중 하나를 선택</p>
+                    <div className="flex flex-wrap gap-2">
+                      {ideas.slice(0, 5).map((idea) => <button key={idea.keyword} type="button" onClick={() => setPopularKeyword(idea.keyword)} className={`rounded-full border px-3 py-2 text-xs transition ${popularKeyword === idea.keyword ? "border-[#80678F] bg-[#80678F] text-white" : "border-[#EAE6E8] bg-white text-[#716777]"}`}>{idea.keyword}</button>)}
+                    </div>
+                    <p className="mt-2 text-[10px] leading-5 text-[#A49AA9]">※ 현재는 편집 추천 키워드 예시입니다. 실시간 인기 순위나 검색량 데이터가 아닙니다.</p>
+                  </div>
+                )}
+                {topicMode === "category" && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-medium text-[#716777]">관심 카테고리 하나를 선택</p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {(["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"] as Category[]).map((category) => <button key={category} type="button" onClick={() => setTopicCategory(category)} className={`rounded-xl border px-3 py-3 text-sm transition ${topicCategory === category ? "border-[#80678F] bg-[#F3EDF6] font-semibold text-[#634B78]" : "border-[#ECE8EA] bg-white text-[#716777]"}`}>{category}</button>)}
+                    </div>
+                  </div>
+                )}
+                <button type="button" disabled={!topicMode || (topicMode === "direct" && !directKeyword.trim()) || (topicMode === "popular" && !popularKeyword) || (topicMode === "category" && !topicCategory)} onClick={() => {
+                  if (topicMode === "direct" && directKeyword.trim()) startWriting(directKeyword.trim(), directKeyword.trim());
+                  if (topicMode === "popular" && popularKeyword) startWriting(popularKeyword, popularKeyword);
+                  if (topicMode === "category" && topicCategory) startWriting("", "", topicCategory);
+                }} className="mt-6 w-full rounded-xl bg-[#665174] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#574364] disabled:cursor-not-allowed disabled:bg-[#C9C1CE] sm:w-auto">키워드 발굴하기 →</button>
               </section>
 
               <section className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
