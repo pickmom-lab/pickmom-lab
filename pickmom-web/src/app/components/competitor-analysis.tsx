@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const trends = [
   { keyword: "서울 크리스마스 마켓", category: "여행·나들이", change: "시즌 주목", intent: "일정·장소·주차" },
@@ -15,12 +15,13 @@ const related = [
   { word: "아이와 주말 나들이 서울", volume: "검색량 조회 필요", docs: "문서수 조회 필요", score: "분석 대기" },
   { word: "서울 아이 체험 예약", volume: "검색량 조회 필요", docs: "문서수 조회 필요", score: "분석 대기" },
 ];
-export default function CompetitorAnalysis({ onSelectKeyword }: { onSelectKeyword: (keyword: string) => void }) {
+export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "" }: { onSelectKeyword: (keyword: string) => void; initialKeyword?: string }) {
   const [tab, setTab] = useState("discover");
   const [keyword, setKeyword] = useState("서울 아이와 겨울 실내 가볼 만한 곳");
   const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<string[]>(["서울 아이와 가볼 만한 곳", "서울 아이와 실내 체험"]);
   const [toast, setToast] = useState("");
+  useEffect(() => { if (initialKeyword.trim()) { setKeyword(initialKeyword); setTab("analyze"); setSearched(false); } }, [initialKeyword]);
   const copy = (value: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) navigator.clipboard.writeText(value);
     setToast("복사했어요.");
