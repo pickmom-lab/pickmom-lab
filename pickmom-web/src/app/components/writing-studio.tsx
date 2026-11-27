@@ -203,7 +203,6 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     {step===1 && <div className="rounded-2xl border bg-white p-5 md:p-6">
       <h3 className="font-semibold">어떤 글을 쓸까요?</h3>
       <label className="mt-4 block text-xs text-[#817787]">핵심 키워드<input value={keyword} onChange={e=>{setKeyword(e.target.value);if(!title||title===keyword)setTitle(e.target.value);}} placeholder="예: 서울 머랭롤 맛집" className="mt-2 w-full rounded-xl border p-3 text-sm"/></label>
-      <label className="mt-4 block text-xs text-[#817787]">카테고리<select value={category} onChange={e=>setCategory(e.target.value as Category)} className="mt-2 w-full rounded-xl border bg-white p-3 text-sm">{categories.map(x=><option key={x}>{x}</option>)}</select></label>
       <p className="mt-4 text-xs text-[#817787]">콘텐츠 유형</p><div className="mt-2 grid grid-cols-2 gap-2">{purposes.map(x=><button key={x} onClick={()=>setPurpose(x)} className={`rounded-xl border p-3 text-sm ${purpose===x?"border-[#8D789C] bg-[#F7F3F9] font-semibold text-[#665174]":""}`}>{x}</button>)}</div>
       <button disabled={!keyword.trim()} onClick={()=>setStep(2)} className="mt-5 rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">다음 단계 →</button>
     </div>}
