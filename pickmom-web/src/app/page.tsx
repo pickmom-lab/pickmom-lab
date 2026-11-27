@@ -33,18 +33,58 @@ type DraftInput = {
 const categories: Category[] = ["맛집·카페", "국내여행", "해외여행", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
 const purposes: Purpose[] = ["경험 리뷰", "비교·분석", "정보 제공", "문제 해결", "추천·판매"];
 const statuses: Status[] = ["아이디어", "키워드 선정", "자료 조사", "원고 작성", "발행 준비", "발행 완료"];
-const ideas = [
-  { category: "리빙·제품" as Category, title: "겨울철 집안 정리, 자주 쓰는 물건부터 바꾸기", keyword: "겨울 집 정리", purpose: "문제 해결" as Purpose, why: "계절 변화와 생활 불편을 연결한 실용형 주제" },
-  { category: "리빙·제품" as Category, title: "매일 쓰는 주방 수납용품, 구매 전 확인할 기준", keyword: "주방 수납용품 추천", purpose: "비교·분석" as Purpose, why: "구매 전 비교 기준을 제시하기 좋은 주제" },
-  { category: "맛집·카페" as Category, title: "아이와 함께 방문한 식당, 방문 전 확인할 것", keyword: "아이와 가기 좋은 식당", purpose: "경험 리뷰" as Purpose, why: "주차·좌석·메뉴 등 실제 경험을 담기 좋은 주제" },
-  { category: "국내여행" as Category, title: "아이와 떠나는 겨울 국내여행, 지역별 가족 여행지", keyword: "아이와 겨울 국내여행", purpose: "정보 제공" as Purpose, why: "이동 시간과 아이 연령, 날씨에 맞춰 국내 여행지를 고르는 데 도움이 되는 주제" },\n  { category: "해외여행" as Category, title: "아이와 겨울 해외여행, 가족 여행지 비교", keyword: "아이와 겨울 해외여행", purpose: "비교·분석" as Purpose, why: "비행시간·날씨·비용·리조트와 체험 요소를 같은 기준으로 비교하는 주제" },\n  { category: "국내여행" as Category, title: "추운 날 아이와 가기 좋은 실내 체험 정리", keyword: "겨울 아이 실내 체험", purpose: "정보 제공" as Purpose, why: "시즌성과 지역 정보를 결합할 수 있는 주제" },
-  { category: "교육 정보" as Category, title: "초등 입학 전 준비, 지금 확인할 생활 습관", keyword: "초등 입학 전 준비", purpose: "정보 제공" as Purpose, why: "학부모의 구체적인 준비 질문에 답하는 주제" },
-  { category: "생활·정책" as Category, title: "연말에 놓치기 쉬운 생활 지원·신청 일정 확인", keyword: "연말 생활 지원 정보", purpose: "정보 제공" as Purpose, why: "공식 일정과 신청 조건 확인이 핵심인 주제" },
-  { category: "부동산·주거" as Category, title: "이사 전 체크해야 할 관리비와 주거 비용 항목", keyword: "이사 전 주거 비용", purpose: "문제 해결" as Purpose, why: "실제 의사결정에 필요한 체크리스트형 주제" },
-  { category: "맛집·카페" as Category, title: "서울 머랭롤 판매 매장과 메뉴 비교", keyword: "서울 머랭롤 맛집", purpose: "비교·분석" as Purpose, why: "판매 여부·메뉴 구성·가격·후기를 같은 기준으로 비교하는 정보형 주제" },
-  { category: "여행·체험" as Category, title: "겨울방학 아이와 갈 만한 실내 체험 비교", keyword: "서울 겨울 실내 체험", purpose: "비교·분석" as Purpose, why: "연령·운영일·예약·주차·체험 내용을 비교해 방문 전 판단을 돕는 주제" },
-  { category: "교육 정보" as Category, title: "초등 입학 전 영어·수학 학습 준비 비교", keyword: "초등 입학 전 학습 준비", purpose: "비교·분석" as Purpose, why: "교재·학습 방식·준비 시기를 비교하되 공식 교육과정과 개인 의견을 구분하는 주제" },
-];
+const ideaSeeds: Record<Category, Array<{ title: string; keyword: string; purpose: Purpose; why: string }>> = {
+  "맛집·카페": [
+    { title: "서울 머랭롤 판매 매장과 메뉴 비교", keyword: "서울 머랭롤 맛집", purpose: "비교·분석", why: "판매 여부와 메뉴·가격·후기를 같은 기준으로 비교하는 주제" },
+    { title: "아이와 가기 좋은 브런치 식당 고르는 기준", keyword: "아이와 브런치 맛집", purpose: "정보 제공", why: "좌석·주차·키즈 메뉴 등 방문 전 궁금한 정보를 정리하기 좋아요" },
+    { title: "겨울에 생각나는 시즌 디저트와 판매 매장", keyword: "겨울 시즌 디저트", purpose: "추천·판매", why: "시즌 메뉴의 판매 기간과 구매 방법을 확인해 소개할 수 있어요" },
+    { title: "포장하기 좋은 케이크와 디저트 비교", keyword: "서울 디저트 포장 추천", purpose: "비교·분석", why: "보관·이동 편의와 구성, 가격을 비교하기 좋은 주제" },
+    { title: "아이 생일에 방문하기 좋은 식당 체크리스트", keyword: "아이 생일 식당 추천", purpose: "정보 제공", why: "예약·룸·주차·메뉴처럼 실제 선택에 필요한 조건을 다룰 수 있어요" },
+  ],
+  "국내여행": [
+    { title: "아이와 떠나는 겨울 국내여행, 지역별 가족 여행지", keyword: "아이와 겨울 국내여행", purpose: "비교·분석", why: "이동 시간과 날씨, 아이 연령에 맞춰 지역을 비교하는 주제" },
+    { title: "추운 날 아이와 가기 좋은 실내 체험 5곳", keyword: "겨울 아이 실내 체험", purpose: "정보 제공", why: "운영일·연령·예약·주차를 정리하면 방문 계획에 도움이 돼요" },
+    { title: "눈놀이와 겨울 축제, 아이 연령별 선택 기준", keyword: "아이와 겨울 축제", purpose: "비교·분석", why: "체험 난이도와 안전·운영 기간을 기준으로 비교할 수 있어요" },
+    { title: "서울 근교 아이와 당일치기 겨울 나들이", keyword: "서울 근교 겨울 당일치기", purpose: "추천·소개", why: "이동 부담과 실내 대안을 함께 제시하기 좋은 주제" },
+    { title: "아이 동반 가족 숙소, 예약 전 확인할 항목", keyword: "아이 동반 가족 숙소", purpose: "문제 해결", why: "객실 구조·침구·수영장·키즈 시설 등 놓치기 쉬운 조건을 정리해요" },
+  ],
+  "해외여행": [
+    { title: "아이와 겨울 해외여행, 따뜻한 여행지 비교", keyword: "아이와 겨울 해외여행", purpose: "비교·분석", why: "비행시간·기후·비용·아이 동반 시설을 같은 기준으로 비교해요" },
+    { title: "아이와 동남아 리조트 선택할 때 볼 것", keyword: "아이와 동남아 리조트 추천", purpose: "비교·분석", why: "키즈클럽·수영장·식사·의료 접근성을 비교하기 좋아요" },
+    { title: "가족 일본 여행, 도시별 이동과 체험 비교", keyword: "아이와 일본 여행", purpose: "비교·분석", why: "비행시간과 대중교통, 아이가 즐길 활동을 함께 살펴볼 수 있어요" },
+    { title: "아이와 장거리 비행 준비, 연령별 체크리스트", keyword: "아이와 장거리 비행 준비", purpose: "문제 해결", why: "좌석·수면·기내 준비물·환승 등 실질적인 질문에 답하는 주제" },
+    { title: "가족 해외여행 예산, 항공·숙박비 계산법", keyword: "가족 해외여행 경비", purpose: "정보 제공", why: "조회일을 명시해 항공·숙박·교통·식비를 나눠 정리할 수 있어요" },
+  ],
+  "교육 정보": [
+    { title: "초등 입학 전 영어·수학 학습 준비 비교", keyword: "초등 입학 전 학습 준비", purpose: "비교·분석", why: "가정·기관 학습과 영역별 준비 기준을 균형 있게 다루는 주제" },
+    { title: "초등 입학 전 생활 습관, 지금 점검할 5가지", keyword: "초등 입학 전 생활 습관", purpose: "정보 제공", why: "학습보다 먼저 점검할 일상 독립과 학교생활 준비를 정리해요" },
+    { title: "영어 리딩 다음 단계, 읽고 이해하는 힘 기르기", keyword: "초등 영어 리딩 독해", purpose: "정보 제공", why: "읽기 수준과 요약·이해 활동을 연결해 설명할 수 있어요" },
+    { title: "아이 영어 쓰기 시작할 때 부담 줄이는 방법", keyword: "초등 영어 글쓰기 시작", purpose: "문제 해결", why: "짧은 문장부터 생각을 구체화하는 연습 과정을 소개하기 좋아요" },
+    { title: "초등 수학 사고력과 교과 연산, 균형 잡는 법", keyword: "초등 수학 사고력 연산", purpose: "비교·분석", why: "학습 목표와 아이의 현재 수준에 따라 선택 기준을 제시해요" },
+  ],
+  "리빙·제품": [
+    { title: "매일 쓰는 주방 수납용품, 구매 전 확인할 기준", keyword: "주방 수납용품 추천", purpose: "비교·분석", why: "크기·용량·소재·관리 편의와 가격을 같은 기준으로 비교해요" },
+    { title: "겨울철 실내 건조, 가습기 선택 전 체크할 점", keyword: "겨울 가습기 선택 기준", purpose: "정보 제공", why: "사용 공간과 관리 방식, 세척 편의 등 구매 기준을 정리해요" },
+    { title: "아이 겨울 외출용품, 실제 사용 목적별 비교", keyword: "어린이 겨울 외출용품", purpose: "비교·분석", why: "보온성·활동성·세탁·사이즈를 기준으로 제품군을 비교할 수 있어요" },
+    { title: "좁은 집 정리, 자주 쓰는 물건부터 수납하기", keyword: "좁은 집 수납 정리", purpose: "문제 해결", why: "공간과 사용 빈도를 기준으로 실행 순서를 제안하는 주제" },
+    { title: "아이와 함께 쓰는 생활용품, 소재와 관리법 비교", keyword: "어린이 생활용품 소재", purpose: "비교·분석", why: "소재·안전 표시·세척·교체 주기를 확인해 소개할 수 있어요" },
+  ],
+  "생활·정책": [
+    { title: "연말에 놓치기 쉬운 생활 지원·신청 일정 확인", keyword: "연말 생활 지원 정보", purpose: "정보 제공", why: "공식 공지의 신청 기간과 대상 조건을 확인해 정리하는 주제" },
+    { title: "2027년 달라지는 생활 제도, 공식 발표 확인하기", keyword: "2027년 달라지는 제도", purpose: "정보 제공", why: "발표된 내용과 시행 예정 내용을 구분해 안내하기 좋아요" },
+    { title: "아이 돌봄 지원 제도, 신청 전 확인할 조건", keyword: "아이 돌봄 지원 신청", purpose: "정보 제공", why: "지역·가구 조건과 신청 절차를 공식 자료로 정리할 수 있어요" },
+    { title: "연말정산 전 가족 관련 공제 항목 점검", keyword: "연말정산 자녀 공제", purpose: "정보 제공", why: "적용 요건과 증빙 서류를 국세청 자료로 확인하는 주제" },
+    { title: "겨울철 난방비 절약 지원, 대상과 신청 방법", keyword: "겨울 난방비 지원", purpose: "정보 제공", why: "지원 대상·기간·신청 창구를 최신 공고 기준으로 안내해요" },
+  ],
+  "부동산·주거": [
+    { title: "이사 전 체크해야 할 관리비와 주거 비용 항목", keyword: "이사 전 주거 비용", purpose: "문제 해결", why: "초기 비용과 매달 반복되는 비용을 구분해 정리하는 주제" },
+    { title: "전세와 월세, 우리 집 상황에 맞게 비교하기", keyword: "전세 월세 비용 비교", purpose: "비교·분석", why: "보증금·월세·이자·관리비를 같은 기간 기준으로 비교해요" },
+    { title: "아이 있는 집 이사, 계약 전 확인할 주거 환경", keyword: "아이 있는 집 이사 체크리스트", purpose: "정보 제공", why: "통학·소음·수납·주차·생활 편의 조건을 점검할 수 있어요" },
+    { title: "겨울철 아파트 결로와 곰팡이 예방 점검", keyword: "겨울 아파트 결로 예방", purpose: "문제 해결", why: "환기·습도·단열 상태 등 확인할 항목을 순서대로 안내해요" },
+    { title: "아파트 관리비 고지서, 항목별로 읽는 방법", keyword: "아파트 관리비 항목", purpose: "정보 제공", why: "공용·개별 사용료와 변동 항목을 구분해 설명할 수 있어요" },
+  ],
+};
+const ideas = categories.flatMap((category) => ideaSeeds[category].map((idea) => ({ ...idea, category })));
 
 const statusClass: Record<Status, string> = {
   "아이디어": "bg-stone-100 text-stone-600",
@@ -107,6 +147,7 @@ export default function Home() {
   const [selectedIdea, setSelectedIdea] = useState<string | null>(null);
   const [preferredCategories, setPreferredCategories] = useState<Category[]>(["교육 정보", "국내여행", "해외여행", "맛집·카페", "리빙·제품"]);
   const [showCategorySettings, setShowCategorySettings] = useState(false);
+  const [expandedRecommendationCategory, setExpandedRecommendationCategory] = useState<Category | null>("교육 정보");
   const [draftInput, setDraftInput] = useState<DraftInput>({
     topic: "", keyword: "", category: "리빙·제품", purpose: "경험 리뷰", notes: "", research: "",
   });
@@ -144,7 +185,7 @@ export default function Home() {
     if (loaded) window.localStorage.setItem("pickmom-preferred-categories-v1", JSON.stringify(preferredCategories));
   }, [preferredCategories, loaded]);
 
-  const visibleIdeas = ideas.filter((idea) => preferredCategories.includes(idea.category));
+  const visibleCategories = categories.filter((category) => preferredCategories.includes(category));
 
   const weekStart = mondayOf(today);
   const weekEnd = new Date(weekStart);
@@ -269,7 +310,7 @@ export default function Home() {
 
               <section className="mb-8">
                 <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                  <div><h2 className="text-lg font-semibold">내 관심 분야의 이번 주 글감</h2><p className="mt-1 text-xs text-[#A49AA9]">선택한 카테고리에 맞춰 정보·비교형 주제를 먼저 제안해요.</p></div>
+                  <div><h2 className="text-lg font-semibold">내 관심 분야의 이번 주 글감</h2><p className="mt-1 text-xs text-[#A49AA9]">관심 분야마다 이번 주 글감 5개를 간결하게 모았어요. 실제 검색량 순위가 아닌 편집 추천이에요.</p></div>
                   <button onClick={() => setShowCategorySettings((value) => !value)} className="rounded-lg border border-[#E6E0E8] px-3 py-2 text-xs font-semibold text-[#665174]">{showCategorySettings ? "관심 분야 닫기" : "관심 분야 설정 ⚙"}</button>
                 </div>
                 {showCategorySettings && <div className="mb-4 rounded-2xl border border-[#EAE4ED] bg-white p-4">
@@ -277,45 +318,54 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{categories.map((category) => <label key={category} className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#F0ECF1] p-3 text-xs"><input type="checkbox" checked={preferredCategories.includes(category)} onChange={(event) => setPreferredCategories((old) => event.target.checked ? [...old, category] : old.filter((value) => value !== category))} />{category}</label>)}</div>
                   {preferredCategories.length === 0 && <p className="mt-2 text-xs text-rose-600">추천을 보려면 카테고리를 하나 이상 선택해 주세요.</p>}
                 </div>}
-                {visibleIdeas.length === 0 ? <div className="rounded-2xl border border-dashed border-[#DED6E3] bg-white p-8 text-center text-sm text-[#918995]">관심 카테고리를 하나 이상 선택하면 관련 글감이 여기에 보여요.</div> :
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {visibleIdeas.map((idea, i) => {
-                    const comparisonPlan = idea.keyword === "주방 수납용품 추천"
-                      ? "비교 대상: 서랍 칸막이형 vs 적층 수납함 vs 벽면·걸이형 수납. 기준: 설치 공간·실측 크기, 용량, 소재·내구성, 세척 편의성, 가격대, 주방 동선. 마지막에는 주방 크기와 보관 물건별 적합한 유형을 정리합니다."
-                      : idea.keyword === "서울 머랭롤 맛집"
-                      ? "비교 대상: 서울에서 현재 판매가 확인되는 매장 3~5곳. 기준: 판매 지점·판매 여부, 메뉴 종류·크기·구성, 확인 가능한 가격, 현장/예약/택배 구매 방식, 품절·판매 일정, 최근 후기의 맛·식감. 파블로바 케이크와는 머랭 식감·크림·과일 구성으로 구분합니다. 판매 여부가 확인되지 않은 매장은 제외합니다."
-                      : idea.keyword === "서울 겨울 실내 체험"
-                      ? "비교 대상: 어린이 박물관·전시형 체험, 만들기 공방, 실내 놀이시설 등 3~5곳. 기준: 권장 연령, 실제 체험 시간, 운영 요일·회차, 이용료와 보호자 비용, 예약·취소 조건, 주차, 아이의 직접 참여 정도. 형제자매 동반 시 연령별 적합성도 구분합니다."
-                      : idea.keyword === "아이와 겨울 해외여행"
-                      ? "비교 대상: 가족 여행 후보 국가·도시 또는 리조트 지역 3~5곳. 기준: 총 비행시간과 직항 여부, 여행 시기별 기후·강수, 항공권과 숙박의 예상 총비용(조회 날짜 명시), 이동 편의성, 아이 연령별 즐길 거리, 키즈 프로그램·수영장, 식사 선택지, 의료 접근성, 안전·비자·입국 조건. 성수기 가격과 실제 예약 가능 여부는 별도 확인합니다."
-                      : idea.keyword === "아이와 겨울 국내여행"
-                      ? "비교 대상: 국내 여행 지역 또는 숙소 유형 3~5곳. 기준: 출발지 기준 이동시간, 겨울철 날씨와 실내 대안, 숙박비와 부대비용, 아이 연령별 체험, 식사·편의시설, 주차, 일정 소화 난이도. 당일치기와 1박 이상 여행을 구분하고 아이 동반 장단점을 정리합니다."
-                      : idea.keyword === "초등 입학 전 학습 준비"
-                      ? "비교 대상: 가정 학습 vs 기관·학원 학습, 영역별 준비 방식. 기준: 초등 교육과정 연계, 혼자 수행 가능한 정도, 주당 소요 시간, 비용, 피드백 방식, 학습 부담. 영어는 파닉스·리딩·쓰기, 수학은 교과 기본·연산·사고력으로 나누고 특정 방식이 우월하다고 단정하지 않습니다."
-                      : idea.keyword === "이사 전 주거 비용"
-                      ? "비교 대상: 전세 vs 월세 또는 기존 집 vs 이사 후보 주택. 기준: 보증금·월세, 관리비 포함 항목, 중개보수, 이사비, 대출 이자, 수선·주차 등 반복 비용. 초기 비용과 월 고정비를 분리해 총비용 관점으로 비교합니다."
-                      : "독자가 실제로 선택해야 하는 대표 유형 2~4개를 비교 대상으로 정합니다. 가격뿐 아니라 이용 조건, 대상·규격, 편의성, 유지 비용, 장단점으로 기준을 통일하고 공식 근거를 확인합니다.";
-                    const researchBrief = [
-                      "[글쓰기 단계에 전달할 조사·구성 제안]",
-                      "주제: " + idea.title,
-                      "핵심 키워드: " + idea.keyword,
-                      "콘텐츠 유형: " + idea.purpose,
-                      "추천 이유: " + idea.why,
-                      idea.purpose === "비교·분석" ? "비교 기획: " + comparisonPlan : idea.purpose === "문제 해결" ? "구성 제안: 독자가 겪는 상황 → 원인 또는 선택이 어려운 지점 → 실행 순서 → 준비물·주의사항 순서로 작성합니다. 비용·효과를 단정하지 말고 공식 기준과 개인차를 구분합니다." : "구성 제안: 독자가 먼저 궁금해할 질문 3~5개를 소제목으로 만들고 핵심 답변 → 세부 조건 → 예외·주의사항 순서로 정리합니다.",
-                      "필수 조사 항목: " + (idea.category === "맛집·카페" ? "현재 판매 여부, 지점별 판매 메뉴와 가격, 주소·영업시간, 구매·예약 방법, 최근 후기의 공통점과 차이" : idea.category === "여행·체험" ? "운영 기간·요일, 권장/제한 연령, 회차와 체험 시간, 예약·취소 조건, 이용료, 주차와 보호자 비용" : idea.category === "국내여행" ? "지역별 이동시간, 계절·날씨, 숙박비와 추가 비용, 아이 동반 체험, 주차·식사·편의시설, 실내 대안" : idea.category === "해외여행" ? "비행시간·직항, 기후·강수, 항공·숙박 총비용, 입국 조건, 아이 동반 시설·체험, 의료·안전 정보" : idea.category === "교육 정보" ? "공식 교육자료, 대상 연령, 준비 시기, 학습 방식별 목표와 한계, 가정에서 확인할 체크포인트" : idea.category === "생활·정책" ? "담당 기관의 최신 공지, 신청 대상, 신청 기간, 지원 내용, 제외 조건과 신청 절차" : "공식 제품·기관 정보, 가격과 추가 비용, 규격·이용 조건, 유지·관리 방법, 장단점"),
-                      "자료 수집 조건: 검색 결과 링크를 본문에 나열하지 않습니다. 공식 홈페이지·공식 SNS·기관 공지와 신뢰할 수 있는 후기를 조사 근거로 사용하고, 출처 URL과 확인 날짜는 글쓰기 참고 메모로만 활용합니다. 가격·운영시간·판매 여부 등 변동 정보는 최신 여부를 확인하고, 확인되지 않으면 미확인으로 표시합니다.",
-                      "사진 조건: 사진 링크나 라이선스 안내를 추천 카드에 노출하지 않습니다. 실제 글에 사용할 사진은 사용자가 직접 첨부한 사진을 우선하고, 외부 사진은 사용 허가와 개별 라이선스를 확인한 경우에만 사용합니다.",
-                      "원고 구성: 제목 아래 핵심 요약 → 선택 기준 또는 핵심 정보 → 항목별 상세 내용 → 비교표/체크리스트(적합한 경우) → 장단점과 추천 대상 → 최신 정보 확인일 순서로 구성합니다.",
-                      "주의: 실제 방문·구매·사용 경험을 만들어 쓰지 말고, 확인된 사실·후기에서 확인한 경향·편집자의 해석을 구분합니다."
-                    ].join("\\n");
-                     return <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                      <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">추천 {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
-                      <h3 className="mt-3 text-sm font-semibold leading-6">{idea.title}</h3>
-                      <p className="mt-2 text-xs text-[#918995]">핵심 키워드 · {idea.keyword}</p>
-                      <p className="mt-3 text-xs leading-5 text-[#817787]">{idea.why}</p>
-                      <div className="mt-4 rounded-xl bg-[#F8F5F9] p-3"><p className="text-xs font-semibold text-[#665174]">이 글에서 조사할 것</p><p className="mt-1 text-xs leading-5 text-[#817787]">{idea.category === "맛집·카페" ? "판매 여부 · 메뉴/가격 · 매장 정보 · 실제 후기 비교" : idea.category === "여행·체험" ? "운영 기간 · 연령 · 예약 · 이용료 · 주차" : idea.category === "국내여행" ? "이동시간 · 계절/날씨 · 숙박비 · 아이 체험 · 주차" : idea.category === "해외여행" ? "비행시간 · 날씨 · 항공/숙박비 · 입국 조건 · 아이 동반 시설" : idea.category === "교육 정보" ? "공식 교육자료 · 대상 연령 · 학습 방식 · 준비 시기" : "공식 정보 · 가격/조건 · 비교 기준 · 장단점"}</p></div>
-                      <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose, researchBrief)} className="mt-4 w-full rounded-lg bg-[#665174] px-3 py-3 text-xs font-semibold text-white">이 주제로 글쓰기 →</button>
-                    </article>;
+                {visibleCategories.length === 0 ? <div className="rounded-xl border border-dashed border-[#DED6E3] bg-white p-5 text-center text-xs text-[#918995]">관심 카테고리를 하나 이상 선택하면 주간 추천을 볼 수 있어요.</div> :
+                <div className="space-y-2">
+                  {visibleCategories.map((category) => {
+                    const categoryIdeas = ideas.filter((idea) => idea.category === category);
+                    const expanded = expandedRecommendationCategory === category;
+                    return <div key={category} className="overflow-hidden rounded-xl border border-[#ECE8EA] bg-white">
+                      <button type="button" onClick={() => setExpandedRecommendationCategory(expanded ? null : category)} aria-expanded={expanded} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
+                        <span className="min-w-0"><span className="block text-sm font-semibold">{category}</span><span className="mt-0.5 block text-[10px] text-[#A49AA9]">이번 주 추천 주제 5개</span></span>
+                        <span className="shrink-0 text-xs font-medium text-[#715B80]">{expanded ? "접기 −" : "펼치기 +"}</span>
+                      </button>
+                      {expanded && <div className="border-t border-[#F0ECF1] px-3">
+                        {categoryIdeas.map((idea, i) => {
+                          const comparisonPlan = idea.keyword === "주방 수납용품 추천"
+                            ? "비교 대상: 서랍 칸막이형 vs 적층 수납함 vs 벽면·걸이형 수납. 기준: 설치 공간·실측 크기, 용량, 소재·내구성, 세척 편의성, 가격대, 주방 동선."
+                            : idea.keyword === "서울 머랭롤 맛집"
+                            ? "비교 대상: 서울에서 현재 판매가 확인되는 매장 3~5곳. 기준: 판매 지점·판매 여부, 메뉴 종류·크기·구성, 확인 가능한 가격, 구매 방식, 최근 후기의 맛·식감. 판매 여부가 확인되지 않은 매장은 제외합니다."
+                            : idea.keyword === "아이와 겨울 해외여행"
+                            ? "비교 대상: 가족 여행 후보 국가·도시 또는 리조트 지역 3~5곳. 기준: 총 비행시간·직항, 여행 시기별 기후, 항공·숙박 예상 비용(조회 날짜 명시), 이동 편의, 아이 연령별 즐길 거리, 키즈 프로그램·수영장, 식사, 의료 접근성, 안전·비자·입국 조건."
+                            : idea.keyword === "아이와 겨울 국내여행"
+                            ? "비교 대상: 국내 여행 지역 또는 숙소 유형 3~5곳. 기준: 출발지 기준 이동시간, 겨울 날씨와 실내 대안, 숙박비·부대비용, 아이 연령별 체험, 식사·편의시설, 주차, 일정 난이도."
+                            : idea.keyword === "초등 입학 전 학습 준비"
+                            ? "비교 대상: 가정 학습 vs 기관·학원 학습. 기준: 교육과정 연계, 혼자 수행 가능한 정도, 주당 소요 시간, 비용, 피드백, 학습 부담. 영어는 파닉스·리딩·쓰기, 수학은 교과 기본·연산·사고력으로 나눕니다."
+                            : "비교 대상과 기준을 3~5개 항목으로 정하고, 가격·조건·장단점은 같은 기준으로 확인합니다.";
+                          const researchBrief = [
+                            "[글쓰기 단계에 전달할 조사·구성 제안]",
+                            "주제: " + idea.title,
+                            "핵심 키워드: " + idea.keyword,
+                            "카테고리: " + idea.category,
+                            "콘텐츠 유형: " + idea.purpose,
+                            "추천 이유: " + idea.why,
+                            idea.purpose === "비교·분석" ? "비교 기획: " + comparisonPlan : "구성 제안: 독자가 먼저 궁금해할 질문 3~5개를 소제목으로 만들고 핵심 답변 → 세부 조건 → 예외·주의사항 순서로 정리합니다.",
+                            "필수 조사 항목: " + (idea.category === "맛집·카페" ? "현재 판매 여부, 지점별 메뉴·가격, 주소·영업시간, 구매·예약 방법, 최근 후기의 공통점" : idea.category === "국내여행" ? "지역별 이동시간, 계절·날씨, 숙박비, 아이 동반 체험, 주차·식사·편의시설, 실내 대안" : idea.category === "해외여행" ? "비행시간·직항, 기후·강수, 항공·숙박 총비용, 입국 조건, 아이 동반 시설·체험, 의료·안전 정보" : idea.category === "교육 정보" ? "공식 교육자료, 대상 연령, 준비 시기, 학습 방식별 목표와 한계" : idea.category === "생활·정책" ? "담당 기관의 최신 공지, 신청 대상·기간, 지원 내용, 제외 조건과 신청 절차" : idea.category === "부동산·주거" ? "공식 제도·계약 정보, 비용 항목, 지역·주택별 조건, 확인 날짜" : "공식 제품·매장 정보, 가격·조건, 규격·이용 방법, 유지·관리, 장단점"),
+                            "자료 원칙: 공식 홈페이지·기관 공지와 신뢰할 수 있는 후기를 확인하고, 출처 URL과 확인 날짜를 기록합니다. 확인되지 않은 가격·운영시간·판매 여부는 사실처럼 쓰지 않습니다.",
+                            "사진 원칙: 사용자가 직접 첨부한 사진을 우선하며, 외부 사진은 사용 허가와 개별 라이선스를 확인한 경우에만 사용합니다.",
+                            "주의: 실제 방문·구매·사용 경험을 만들어 쓰지 말고, 확인된 사실·후기에서 확인한 경향·편집자의 해석을 구분합니다."
+                          ].join("\\n");
+                          return <div key={idea.keyword} className="flex items-start gap-3 border-b border-[#F2EFF2] py-3 last:border-0">
+                            <span className="mt-0.5 w-4 shrink-0 text-[10px] tabular-nums text-[#A49AA9]">{String(i + 1).padStart(2, "0")}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2"><h3 className="text-xs font-semibold leading-5">{idea.title}</h3><span className="rounded-full bg-[#F5F1F6] px-2 py-0.5 text-[9px] text-[#715B80]">{idea.purpose}</span></div>
+                              <p className="mt-1 text-[10px] text-[#8D8491]">키워드 · {idea.keyword}</p>
+                              <p className="mt-1 text-[11px] leading-4 text-[#817787]">{idea.why}</p>
+                            </div>
+                            <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose, researchBrief)} className="shrink-0 rounded-lg bg-[#665174] px-2.5 py-2 text-[10px] font-semibold text-white">글쓰기</button>
+                          </div>;
+                        })}
+                      </div>}
+                    </div>;
                   })}
                 </div>}
 
