@@ -47,16 +47,6 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
   const [loadingCounts, setLoadingCounts] = useState(false);
   const [apiError, setApiError] = useState("");
 
-  useEffect(() => {
-    const query = initialKeyword.trim();
-    if (query) {
-      setKeyword(query);
-      setTab("analyze");
-      setSelectedKeyword("");
-      runAnalysis(query);
-    }
-  }, [initialKeyword, runAnalysis]);
-
   const rows = useMemo(() => makeKeywordRows(keyword), [keyword]);
   const copy = (value: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) navigator.clipboard.writeText(value);
@@ -89,6 +79,16 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
     else if (failures > 0) setApiError(failures + "개 키워드의 문서 수를 불러오지 못했어요.");
     setLoadingCounts(false);
   }, []);
+
+  useEffect(() => {
+    const query = initialKeyword.trim();
+    if (query) {
+      setKeyword(query);
+      setTab("analyze");
+      setSelectedKeyword("");
+      runAnalysis(query);
+    }
+  }, [initialKeyword, runAnalysis]);
 
   return (
     <section className="mx-auto max-w-6xl space-y-5 pb-8">
