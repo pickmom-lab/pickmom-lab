@@ -290,8 +290,10 @@ export default function Home() {
                       "사진 삽입 위치: 제목 아래 대표 사진 → 업체/장소 소개 문단 아래 외관·대표 이미지 → 메뉴·시설·제품 비교 문단 아래 세부 사진 → 비교 요약 아래 보충 사진.",
                       "사용자가 직접 경험한 내용은 별도 메모로 추가하고, 확인된 사실과 추정·의견을 구분해 작성하세요."
                     ].join("\n");
-                    const search = encodeURIComponent(idea.keyword + " 공식 홈페이지 인스타그램 사진");
-                    const images = encodeURIComponent(idea.keyword + " 공식");
+                    const search = encodeURIComponent(idea.keyword + " 공식 홈페이지");
+                    const images = encodeURIComponent(idea.keyword + " free stock photo");
+                    const instagramSearch = encodeURIComponent(`site:instagram.com ${idea.keyword} 공식`);
+                    const photoSearch = encodeURIComponent(idea.keyword);
                     return <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
                       <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">추천 {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
                       <h3 className="mt-3 text-sm font-semibold leading-6">{idea.title}</h3>
@@ -299,8 +301,11 @@ export default function Home() {
                       <p className="mt-3 text-xs leading-5 text-[#817787]">{idea.why}</p>
                       <div className="mt-4 rounded-xl bg-[#F8F5F9] p-3"><p className="text-xs font-semibold text-[#665174]">이 글에서 조사할 것</p><p className="mt-1 text-xs leading-5 text-[#817787]">{idea.category === "맛집·카페" ? "판매 여부 · 메뉴/가격 · 매장 정보 · 실제 후기 비교" : idea.category === "여행·체험" ? "운영 기간 · 연령 · 예약 · 이용료 · 주차" : idea.category === "교육 정보" ? "공식 교육자료 · 대상 연령 · 학습 방식 · 준비 시기" : "공식 정보 · 가격/조건 · 비교 기준 · 장단점"}</p></div>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <a href={`https://www.google.com/search?q=${search}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">공식 출처 찾기 ↗</a>
-                        <a href={`https://www.google.com/search?tbm=isch&q=${images}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">사진 검색 ↗</a>
+                        <a href={`https://www.google.com/search?q=${search}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">공식 홈페이지 ↗</a>
+                        <a href={`https://www.google.com/search?q=${instagramSearch}`} target="_blank" rel="noreferrer" className="rounded-lg border border-[#D8C9E5] bg-[#F8F5FA] px-3 py-2 text-xs font-semibold text-[#665174]">인스타 공식 게시물 찾기 ↗</a>
+                        <a href={`https://www.instagram.com/explore/tags/${encodeURIComponent(idea.keyword.replace(/\\s+/g, ""))}/`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">인스타 해시태그 ↗</a>
+                        <a href={`https://www.pexels.com/search/${photoSearch}/`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">무료 스톡 사진 ↗</a>
+                        <a href={`https://unsplash.com/s/photos/${photoSearch}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">Unsplash 사진 ↗</a>
                         <a href={`https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(idea.keyword)}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">블로그 후기 확인 ↗</a>
                       </div>
                       <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose, researchBrief)} className="mt-4 rounded-lg bg-[#665174] px-3 py-2.5 text-xs font-semibold text-white">조사 방향을 담아 글쓰기 →</button>
