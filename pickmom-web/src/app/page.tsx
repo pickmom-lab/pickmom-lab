@@ -199,9 +199,9 @@ export default function Home() {
   const navItems = [
     { id: "home" as const, label: "홈", icon: "⌂" },
     { id: "keywords" as const, label: "키워드 연구소", icon: "⌕" },
-    { id: "templates" as const, label: "인기글 분석·템플릿", icon: "▤" },
-    { id: "writing" as const, label: "블로그 글쓰기", icon: "✎" },
+    { id: "writing" as const, label: "글쓰기", icon: "✎" },
     { id: "calendar" as const, label: "콘텐츠 캘린더", icon: "▦" },
+    { id: "templates" as const, label: "인기글 분석·템플릿", icon: "▤" },
   ];
 
   return (
