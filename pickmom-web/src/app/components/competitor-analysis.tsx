@@ -21,14 +21,19 @@ const relatedSeeds = [
 function makeKeywordRows(keyword: string) {
   const base = keyword.trim();
   if (!base) return { recommended: [], related: [] };
+  const recommended = [
+    { word: base, kind: "입력한 키워드" },
+    { word: `${base} 추천`, kind: "추천 확장" },
+    { word: `${base} 후기`, kind: "추천 확장" },
+    { word: `${base} 가격`, kind: "추천 확장" },
+  ];
+  const recommendedWords = new Set(recommended.map((row) => row.word));
   return {
-    recommended: [
-      { word: base, kind: "입력한 키워드" },
-      { word: `${base} 추천`, kind: "추천 확장" },
-      { word: `${base} 후기`, kind: "추천 확장" },
-      { word: `${base} 가격`, kind: "추천 확장" },
-    ],
-    related: relatedSeeds.map((suffix) => ({ word: `${base} ${suffix}`, kind: "연관 확장" })),
+    recommended,
+    // 추천 키워드에 이미 노출된 표현은 연관 키워드에서 제외해 중복 선택을 방지합니다.
+    related: relatedSeeds
+      .map((suffix) => ({ word: `${base} ${suffix}`, kind: "연관 확장" }))
+      .filter((row) => !recommendedWords.has(row.word)),
   };
 }
 
@@ -180,28 +185,34 @@ function KeywordSection({ title, description, rows, selectedKeyword, onSelect }:
         <h3 className="font-semibold text-[#51445A]">{title}</h3>
         <p className="mt-1 text-xs text-[#A49AA9]">{description}</p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-left text-xs">
+      <div className="w-full">
+        <table className="w-full table-fixed text-left text-[10px] sm:text-xs">
+          <colgroup>
+            <col className="w-[12%]" />
+            <col className="w-[36%]" />
+            <col className="w-[24%]" />
+            <col className="w-[28%]" />
+          </colgroup>
           <thead className="bg-[#FAF9FA] text-[#918995]">
             <tr>
-              <th className="w-14 p-3 text-center">선택</th>
-              <th className="p-3">키워드</th>
-              <th className="p-3">월 검색량</th>
-              <th className="p-3">블로그 문서 수</th>
+              <th className="break-keep px-1.5 py-3 text-center sm:px-3">선택</th>
+              <th className="break-keep px-1.5 py-3 sm:px-3">키워드</th>
+              <th className="break-keep px-1.5 py-3 sm:px-3">월 검색량</th>
+              <th className="break-keep px-1.5 py-3 sm:px-3">블로그 문서 수</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.word} className={`border-t border-[#F2EFF3] ${selectedKeyword === row.word ? "bg-[#F8F5F9]" : ""}`}>
-                <td className="p-3 text-center">
+                <td className="px-1.5 py-3 text-center sm:px-3">
                   <input type="radio" name="final-keyword" aria-label={`${row.word} 선택`} checked={selectedKeyword === row.word} onChange={() => onSelect(row.word)} className="h-4 w-4 accent-[#665174]" />
                 </td>
-                <td className="p-3">
+                <td className="break-words px-1.5 py-3 sm:px-3">
                   <span className="font-medium text-[#51445A]">{row.word}</span>
-                  <span className="ml-2 rounded-full bg-[#F5F1F6] px-2 py-1 text-[10px] text-[#806B8E]">{row.kind}</span>
+                  <span className="mt-1 block text-[9px] text-[#806B8E] sm:inline sm:ml-2 sm:mt-0">{row.kind}</span>
                 </td>
-                <td className="p-3 text-[#A49AA9]">데이터 연동 후 제공</td>
-                <td className="p-3 text-[#A49AA9]">데이터 연동 후 제공</td>
+                <td className="break-words px-1.5 py-3 text-[#A49AA9] sm:px-3">연동 후 제공</td>
+                <td className="break-words px-1.5 py-3 text-[#A49AA9] sm:px-3">연동 후 제공</td>
               </tr>
             ))}
           </tbody>
