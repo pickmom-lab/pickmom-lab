@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const params = new URLSearchParams({ query, display: "10", start: "1", sort: "sim" });
+  const requestedSort = request.nextUrl.searchParams.get("sort");
+  const sort = requestedSort === "date" ? "date" : "sim";
+  const params = new URLSearchParams({ query, display: "10", start: "1", sort });
 
   try {
     const response = await fetch(
