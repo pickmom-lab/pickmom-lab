@@ -5,7 +5,7 @@ import CompetitorAnalysis from "./components/competitor-analysis";
 import PopularPostTemplates from "./components/popular-post-templates";
 import WritingStudio from "./components/writing-studio";
 
-type Category = "리빙·제품" | "맛집·카페" | "여행·체험" | "교육 정보" | "부동산·주거" | "생활·정책";
+type Category = "리빙·제품" | "맛집·카페" | "여행·체험" | "국내여행" | "해외여행" | "교육 정보" | "부동산·주거" | "생활·정책";
 type Purpose = "경험 리뷰" | "비교·분석" | "정보 제공" | "문제 해결" | "추천·판매" | "직접 경험·방문 후기" | "정보 전달" | "추천·소개" | "문제 해결·노하우";
 type Status = "아이디어" | "키워드 선정" | "자료 조사" | "원고 작성" | "발행 준비" | "발행 완료";
 type Post = {
@@ -30,14 +30,14 @@ type DraftInput = {
   research: string;
 };
 
-const categories: Category[] = ["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
+const categories: Category[] = ["맛집·카페", "국내여행", "해외여행", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
 const purposes: Purpose[] = ["경험 리뷰", "비교·분석", "정보 제공", "문제 해결", "추천·판매"];
 const statuses: Status[] = ["아이디어", "키워드 선정", "자료 조사", "원고 작성", "발행 준비", "발행 완료"];
 const ideas = [
   { category: "리빙·제품" as Category, title: "겨울철 집안 정리, 자주 쓰는 물건부터 바꾸기", keyword: "겨울 집 정리", purpose: "문제 해결" as Purpose, why: "계절 변화와 생활 불편을 연결한 실용형 주제" },
   { category: "리빙·제품" as Category, title: "매일 쓰는 주방 수납용품, 구매 전 확인할 기준", keyword: "주방 수납용품 추천", purpose: "비교·분석" as Purpose, why: "구매 전 비교 기준을 제시하기 좋은 주제" },
   { category: "맛집·카페" as Category, title: "아이와 함께 방문한 식당, 방문 전 확인할 것", keyword: "아이와 가기 좋은 식당", purpose: "경험 리뷰" as Purpose, why: "주차·좌석·메뉴 등 실제 경험을 담기 좋은 주제" },
-  { category: "여행·체험" as Category, title: "추운 날 아이와 가기 좋은 실내 체험 정리", keyword: "겨울 아이 실내 체험", purpose: "정보 제공" as Purpose, why: "시즌성과 지역 정보를 결합할 수 있는 주제" },
+  { category: "국내여행" as Category, title: "아이와 떠나는 겨울 국내여행, 지역별 가족 여행지", keyword: "아이와 겨울 국내여행", purpose: "정보 제공" as Purpose, why: "이동 시간과 아이 연령, 날씨에 맞춰 국내 여행지를 고르는 데 도움이 되는 주제" },\n  { category: "해외여행" as Category, title: "아이와 겨울 해외여행, 가족 여행지 비교", keyword: "아이와 겨울 해외여행", purpose: "비교·분석" as Purpose, why: "비행시간·날씨·비용·리조트와 체험 요소를 같은 기준으로 비교하는 주제" },\n  { category: "여행·체험" as Category, title: "추운 날 아이와 가기 좋은 실내 체험 정리", keyword: "겨울 아이 실내 체험", purpose: "정보 제공" as Purpose, why: "시즌성과 지역 정보를 결합할 수 있는 주제" },
   { category: "교육 정보" as Category, title: "초등 입학 전 준비, 지금 확인할 생활 습관", keyword: "초등 입학 전 준비", purpose: "정보 제공" as Purpose, why: "학부모의 구체적인 준비 질문에 답하는 주제" },
   { category: "생활·정책" as Category, title: "연말에 놓치기 쉬운 생활 지원·신청 일정 확인", keyword: "연말 생활 지원 정보", purpose: "정보 제공" as Purpose, why: "공식 일정과 신청 조건 확인이 핵심인 주제" },
   { category: "부동산·주거" as Category, title: "이사 전 체크해야 할 관리비와 주거 비용 항목", keyword: "이사 전 주거 비용", purpose: "문제 해결" as Purpose, why: "실제 의사결정에 필요한 체크리스트형 주제" },
@@ -105,7 +105,7 @@ export default function Home() {
   const [popularKeyword, setPopularKeyword] = useState("");
   const [topicCategory, setTopicCategory] = useState<Category | "">("");
   const [selectedIdea, setSelectedIdea] = useState<string | null>(null);
-  const [preferredCategories, setPreferredCategories] = useState<Category[]>(["교육 정보", "여행·체험", "맛집·카페", "리빙·제품"]);
+  const [preferredCategories, setPreferredCategories] = useState<Category[]>(["교육 정보", "국내여행", "해외여행", "여행·체험", "맛집·카페", "리빙·제품"]);
   const [showCategorySettings, setShowCategorySettings] = useState(false);
   const [draftInput, setDraftInput] = useState<DraftInput>({
     topic: "", keyword: "", category: "리빙·제품", purpose: "경험 리뷰", notes: "", research: "",
@@ -129,7 +129,7 @@ export default function Home() {
       const raw = window.localStorage.getItem("pickmom-blog-posts-v2");
       if (raw) { const stored = JSON.parse(raw) as Array<Omit<Post, "category"> & { category: string }>; setPosts(stored.map((post) => ({ ...post, category: (post.category === "쇼핑·제품" ? "리빙·제품" : post.category) as Category }))); }
       const savedCategories = window.localStorage.getItem("pickmom-preferred-categories-v1");
-      if (savedCategories) { const parsed = JSON.parse(savedCategories) as string[]; const valid = parsed.filter((value): value is Category => categories.includes(value as Category)); setPreferredCategories(valid); }
+      if (savedCategories) { const parsed = JSON.parse(savedCategories) as string[]; const migrated = parsed.includes("여행·체험") ? [...parsed, "국내여행", "해외여행"] : parsed; const valid = Array.from(new Set(migrated)).filter((value): value is Category => categories.includes(value as Category)); setPreferredCategories(valid); }
     } catch {
       // Ignore invalid local data and keep the workspace usable.
     }
@@ -170,7 +170,7 @@ export default function Home() {
   const inferCategory = (value: string): Category => {
     const text = value.toLowerCase();
     if (/맛집|식당|카페|디저트|빵|케이크|쿠키|국수|고기|음식/.test(text)) return "맛집·카페";
-    if (/여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(text)) return "여행·체험";
+    if (/해외|국제선|비행기|항공권|일본|베트남|괌|발리|나트랑|다낭|싱가포르|해외여행/.test(text)) return "해외여행";\n    if (/국내|제주|강릉|부산|경주|전주|속초|여수|국내여행/.test(text)) return "국내여행";\n    if (/여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(text)) return "여행·체험";
     if (/영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(text)) return "교육 정보";
     if (/부동산|아파트|전세|월세|청약|이사|주거/.test(text)) return "부동산·주거";
     if (/선물|추천|구매|가격|제품|상품|쇼핑/.test(text)) return "리빙·제품";
@@ -179,7 +179,7 @@ export default function Home() {
   };
   const startWriting = (topic = "", keyword = "", category?: Category, purpose?: Purpose, researchBrief = "") => {
     const detectedCategory = category || inferCategory(keyword || topic);
-    const detectedPurpose = purpose || (detectedCategory === "맛집·카페" || detectedCategory === "여행·체험" ? "경험 리뷰" : "정보 제공");
+    const detectedPurpose = purpose || (detectedCategory === "맛집·카페" || detectedCategory === "여행·체험" || detectedCategory === "국내여행" || detectedCategory === "해외여행" ? "경험 리뷰" : "정보 제공");
     setDraftInput({ topic, keyword, category: detectedCategory, purpose: detectedPurpose, notes: "", research: researchBrief });
     setScheduleDate(dateKey(new Date()));
     setAngle("");
@@ -298,7 +298,7 @@ export default function Home() {
                       "콘텐츠 유형: " + idea.purpose,
                       "추천 이유: " + idea.why,
                       idea.purpose === "비교·분석" ? "비교 기획: " + comparisonPlan : idea.purpose === "문제 해결" ? "구성 제안: 독자가 겪는 상황 → 원인 또는 선택이 어려운 지점 → 실행 순서 → 준비물·주의사항 순서로 작성합니다. 비용·효과를 단정하지 말고 공식 기준과 개인차를 구분합니다." : "구성 제안: 독자가 먼저 궁금해할 질문 3~5개를 소제목으로 만들고 핵심 답변 → 세부 조건 → 예외·주의사항 순서로 정리합니다.",
-                      "필수 조사 항목: " + (idea.category === "맛집·카페" ? "현재 판매 여부, 지점별 판매 메뉴와 가격, 주소·영업시간, 구매·예약 방법, 최근 후기의 공통점과 차이" : idea.category === "여행·체험" ? "운영 기간·요일, 권장/제한 연령, 회차와 체험 시간, 예약·취소 조건, 이용료, 주차와 보호자 비용" : idea.category === "교육 정보" ? "공식 교육자료, 대상 연령, 준비 시기, 학습 방식별 목표와 한계, 가정에서 확인할 체크포인트" : idea.category === "생활·정책" ? "담당 기관의 최신 공지, 신청 대상, 신청 기간, 지원 내용, 제외 조건과 신청 절차" : "공식 제품·기관 정보, 가격과 추가 비용, 규격·이용 조건, 유지·관리 방법, 장단점"),
+                      "필수 조사 항목: " + (idea.category === "맛집·카페" ? "현재 판매 여부, 지점별 판매 메뉴와 가격, 주소·영업시간, 구매·예약 방법, 최근 후기의 공통점과 차이" : idea.category === "여행·체험" ? "운영 기간·요일, 권장/제한 연령, 회차와 체험 시간, 예약·취소 조건, 이용료, 주차와 보호자 비용" : idea.category === "국내여행" ? "지역별 이동시간, 계절·날씨, 숙박비와 추가 비용, 아이 동반 체험, 주차·식사·편의시설, 실내 대안" : idea.category === "해외여행" ? "비행시간·직항, 기후·강수, 항공·숙박 총비용, 입국 조건, 아이 동반 시설·체험, 의료·안전 정보" : idea.category === "교육 정보" ? "공식 교육자료, 대상 연령, 준비 시기, 학습 방식별 목표와 한계, 가정에서 확인할 체크포인트" : idea.category === "생활·정책" ? "담당 기관의 최신 공지, 신청 대상, 신청 기간, 지원 내용, 제외 조건과 신청 절차" : "공식 제품·기관 정보, 가격과 추가 비용, 규격·이용 조건, 유지·관리 방법, 장단점"),
                       "자료 수집 조건: 검색 결과 링크를 본문에 나열하지 않습니다. 공식 홈페이지·공식 SNS·기관 공지와 신뢰할 수 있는 후기를 조사 근거로 사용하고, 출처 URL과 확인 날짜는 글쓰기 참고 메모로만 활용합니다. 가격·운영시간·판매 여부 등 변동 정보는 최신 여부를 확인하고, 확인되지 않으면 미확인으로 표시합니다.",
                       "사진 조건: 사진 링크나 라이선스 안내를 추천 카드에 노출하지 않습니다. 실제 글에 사용할 사진은 사용자가 직접 첨부한 사진을 우선하고, 외부 사진은 사용 허가와 개별 라이선스를 확인한 경우에만 사용합니다.",
                       "원고 구성: 제목 아래 핵심 요약 → 선택 기준 또는 핵심 정보 → 항목별 상세 내용 → 비교표/체크리스트(적합한 경우) → 장단점과 추천 대상 → 최신 정보 확인일 순서로 구성합니다.",
@@ -309,7 +309,7 @@ export default function Home() {
                       <h3 className="mt-3 text-sm font-semibold leading-6">{idea.title}</h3>
                       <p className="mt-2 text-xs text-[#918995]">핵심 키워드 · {idea.keyword}</p>
                       <p className="mt-3 text-xs leading-5 text-[#817787]">{idea.why}</p>
-                      <div className="mt-4 rounded-xl bg-[#F8F5F9] p-3"><p className="text-xs font-semibold text-[#665174]">이 글에서 조사할 것</p><p className="mt-1 text-xs leading-5 text-[#817787]">{idea.category === "맛집·카페" ? "판매 여부 · 메뉴/가격 · 매장 정보 · 실제 후기 비교" : idea.category === "여행·체험" ? "운영 기간 · 연령 · 예약 · 이용료 · 주차" : idea.category === "교육 정보" ? "공식 교육자료 · 대상 연령 · 학습 방식 · 준비 시기" : "공식 정보 · 가격/조건 · 비교 기준 · 장단점"}</p></div>
+                      <div className="mt-4 rounded-xl bg-[#F8F5F9] p-3"><p className="text-xs font-semibold text-[#665174]">이 글에서 조사할 것</p><p className="mt-1 text-xs leading-5 text-[#817787]">{idea.category === "맛집·카페" ? "판매 여부 · 메뉴/가격 · 매장 정보 · 실제 후기 비교" : idea.category === "여행·체험" ? "운영 기간 · 연령 · 예약 · 이용료 · 주차" : idea.category === "국내여행" ? "이동시간 · 계절/날씨 · 숙박비 · 아이 체험 · 주차" : idea.category === "해외여행" ? "비행시간 · 날씨 · 항공/숙박비 · 입국 조건 · 아이 동반 시설" : idea.category === "교육 정보" ? "공식 교육자료 · 대상 연령 · 학습 방식 · 준비 시기" : "공식 정보 · 가격/조건 · 비교 기준 · 장단점"}</p></div>
                       <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose, researchBrief)} className="mt-4 w-full rounded-lg bg-[#665174] px-3 py-3 text-xs font-semibold text-white">이 주제로 글쓰기 →</button>
                     </article>;
                   })}
