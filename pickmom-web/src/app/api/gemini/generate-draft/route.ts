@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const categories = ["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
+const categories = ["맛집·카페", "여행·체험", "국내여행", "해외여행", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
 const purposes = ["정보", "실사용 후기", "비교", "문제 해결"];
 type RequestBody = { keyword?: unknown; category?: unknown; purpose?: unknown; notes?: unknown; tips?: unknown; photoCaptions?: unknown };
 const text = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) : "";
