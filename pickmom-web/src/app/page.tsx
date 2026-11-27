@@ -171,7 +171,7 @@ export default function Home() {
       const raw = window.localStorage.getItem("pickmom-blog-posts-v2");
       if (raw) { const stored = JSON.parse(raw) as Array<Omit<Post, "category"> & { category: string }>; setPosts(stored.map((post) => ({ ...post, category: (post.category === "쇼핑·제품" ? "리빙·제품" : post.category) as Category }))); }
       const savedCategories = window.localStorage.getItem("pickmom-preferred-categories-v1");
-      if (savedCategories) { const parsed = JSON.parse(savedCategories) as string[]; const migrated = parsed.includes("여행·체험") ? [...parsed.filter((value) => value !== "여행·체험"), "국내여행", "해외여행"] : parsed; const valid = Array.from(new Set(migrated)).filter((value): value is Category => categories.includes(value as Category)); setPreferredCategories(valid); }
+      if (savedCategories) { const parsed = JSON.parse(savedCategories) as string[]; const migrated = parsed.includes("여행·체험") ? [...parsed.filter((value) => value !== "여행·체험"), "국내여행", "해외여행"] : parsed; const valid = Array.from(new Set(migrated)).filter((value): value is Category => categories.includes(value as ActiveCategory)); setPreferredCategories(valid); }
     } catch {
       // Ignore invalid local data and keep the workspace usable.
     }
