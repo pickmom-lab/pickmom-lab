@@ -136,7 +136,7 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
             <p className="mt-1 text-xs text-[#A49AA9]">검색어를 수정하면 다시 분석할 수 있어요. 홈에서 넘어온 검색어는 자동으로 분석됩니다.</p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setSearched(false); setSelectedKeyword(""); setDocumentCounts({}); setApiError(""); }} onKeyDown={(e) => { if (e.key === "Enter") runAnalysis(); }} placeholder="분석할 키워드 입력" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
-              <button onClick={runAnalysis} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">{loadingCounts ? "분석 중…" : "다시 분석"}</button>
+              <button onClick={() => void runAnalysis()} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">{loadingCounts ? "분석 중…" : "다시 분석"}</button>
             </div>
           </div>
 
