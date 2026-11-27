@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 type Category = "맛집·카페" | "여행·체험" | "국내여행" | "해외여행" | "교육 정보" | "리빙·제품" | "생활·정책" | "부동산·주거";
 type Purpose = "정보" | "실사용 후기" | "비교" | "문제 해결";
 type Photo = { id: string; src: string; caption: string };
+type ResearchReference = { title: string; link: string; description: string; bloggerName: string; postDate: string };
 type Props = {
   initialKeyword?: string;
   initialCategory?: Category;
@@ -53,6 +54,9 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
   const [title, setTitle] = useState(initialKeyword);
   const [draft, setDraft] = useState("");
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [references, setReferences] = useState<ResearchReference[]>([]);
+  const [searchingReferences, setSearchingReferences] = useState(false);
+  const [referenceError, setReferenceError] = useState("");
   const [tips, setTips] = useState("");
   const [showTips, setShowTips] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -77,6 +81,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
       setNotes(d.notes || Object.values(d.values || {}).filter(Boolean).join("\n"));
       setDraft(typeof d.draft === "string" ? d.draft : "");
       setTips(d.tips || "");
+      setReferences(Array.isArray(d.references) ? d.references : []);
       const savedPhotoSources = initialPhotos || [];
       const restored = savedPhotoSources.length ? savedPhotoSources : (d.photos || []).map((p: any) => typeof p === "string" ? p : p.src).filter(Boolean);
       setPhotos(restored.map((src: string, i: number) => ({ id: d.photoMeta?.[i]?.id || String(i), src, caption: d.photoMeta?.[i]?.caption || "" })));
@@ -105,6 +110,25 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     setPhotos(old => [...old, ...added.filter(photo => photo.src)]);
     setBusy(false);
   };
+  const findBlogReferences = async () => {
+    if (!keyword.trim()) return;
+    setSearchingReferences(true);
+    setReferenceError("");
+    try {
+      const response = await fetch(`/api/naver/blog-search?query=${encodeURIComponent(keyword.trim())}&sort=date`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "참고글 검색에 실패했습니다.");
+      setReferences(Array.isArray(result.items) ? result.items.slice(0, 5) : []);
+      if (!result.items?.length) setReferenceError("검색 결과가 없어요. 키워드를 조금 넓혀 다시 검색해 보세요.");
+    } catch (error) {
+      setReferenceError(error instanceof Error ? error.message : "네이버 블로그 검색 중 오류가 발생했습니다.");
+    } finally {
+      setSearchingReferences(false);
+    }
+  };
+  const referenceContext = () => references.length
+    ? references.map((item, index) => `${index + 1}. ${item.title} (${item.postDate || "날짜 미표시"}) / ${item.bloggerName || "작성자 미표시"}\\n요약: ${item.description}\\nURL: ${item.link}`).join("\\n\\n")
+    : "참고 블로그 검색 결과 없음";
   const movePhoto = (i: number, delta: number) => setPhotos(old => {
     const next = [...old], j = i + delta;
     if (j < 0 || j >= next.length) return old;
@@ -112,7 +136,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     return next;
   });
   const save = (status: "원고 작성" | "발행 준비") => {
-    const data = { keyword, title, category, purpose, date, notes, tips, photoMeta: photos.map(({ id, caption }) => ({ id, caption })), draft };
+    const data = { keyword, title, category, purpose, date, notes, tips, references, photoMeta: photos.map(({ id, caption }) => ({ id, caption })), draft };
     onSave({ title: title || keyword, keyword, category, purpose, date, draft, photos: photos.map(p => p.src), formData: JSON.stringify(data), status });
   };
   const insertNoteStarter = () => {
@@ -135,7 +159,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     `콘텐츠 유형: ${purpose}`,
     `조사·비교 기획안:\n${researchPlan.trim() || "별도 기획안 없음"}`,
     `사용자가 제공한 경험·자료:\n${notes.trim() || "아직 입력하지 않았습니다. 실제 경험이나 사실을 만들지 말고 글의 구조와 추가 입력이 필요한 부분을 표시하세요."}`,
-    tips.trim() ? `추가 요청:\n${tips.trim()}` : "",
+    `네이버 블로그 참고글 후보(검색 결과 요약이며 사실 검증된 자료가 아님):\n${referenceContext()}`,\n    tips.trim() ? `추가 요청:\n${tips.trim()}` : "",
     `사진 설명(실제 이미지 분석 아님):\n${photos.map((p,i)=>`사진 ${i+1}: ${p.caption.trim() || "설명 없음"}`).join("\n") || "첨부 사진 없음"}`,
     "출력 형식: 제목 후보 3개, 최종 제목, 본문을 구분해 주세요. 근거가 없는 정보는 추측하지 마세요."
   ].filter(Boolean).join("\n\n");
@@ -252,6 +276,21 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     {step===2 && <div className="space-y-4 rounded-2xl border bg-white p-5 md:p-6">
       <div><h3 className="font-semibold">경험과 알고 있는 내용을 편하게 적어주세요.</h3><p className="mt-1 text-xs leading-5 text-[#918995]">완성된 문장으로 쓸 필요 없어요. 단어와 짧은 메모만 적어도 됩니다. 자료가 없다면 아래 질문을 넣어 하나씩 채우거나, 키워드만으로 글의 뼈대부터 만들 수 있어요.</p><button type="button" onClick={insertNoteStarter} className="mt-3 rounded-lg border border-[#DCD2E3] bg-[#F8F5F9] px-3 py-2 text-xs font-semibold text-[#665174]">내 글 유형에 맞는 메모 질문 넣기</button></div>
       {researchPlan.trim() && <div className="rounded-xl border border-[#E5DCEB] bg-[#F8F5F9] p-4"><h4 className="text-sm font-semibold text-[#665174]">이 주제의 조사·비교 제안</h4><p className="mt-1 text-[11px] leading-5 text-[#817787]">아래 내용을 바탕으로 자료를 확인한 뒤, 본인이 찾은 정보와 의견을 추가해 주세요.</p><pre className="mt-3 whitespace-pre-wrap font-sans text-xs leading-6 text-[#665174]">{researchPlan}</pre></div>}
+      <div className="rounded-xl border border-[#E5DCEB] bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div><h4 className="text-sm font-semibold text-[#665174]">참고할 블로그 글 찾기</h4><p className="mt-1 text-[11px] text-[#918995]">현재 키워드의 최근 네이버 블로그 글 5개를 찾아요.</p></div>
+          <button type="button" onClick={()=>void findBlogReferences()} disabled={searchingReferences || !keyword.trim()} className="rounded-lg border border-[#DCD2E3] px-3 py-2 text-xs font-semibold text-[#665174] disabled:opacity-50">{searchingReferences ? "검색 중..." : "최근 참고글 검색"}</button>
+        </div>
+        {referenceError && <p role="status" className="mt-2 text-xs text-[#956B4B]">{referenceError}</p>}
+        {references.length > 0 && <div className="mt-3 space-y-3 border-t pt-3">
+          {references.map((item,index)=><div key={item.link || index} className="text-xs">
+            <a href={item.link} target="_blank" rel="noreferrer" className="font-semibold leading-5 text-[#665174] underline">{item.title}</a>
+            <p className="mt-1 text-[10px] text-[#A49AA9]">{item.postDate || "날짜 미표시"} · {item.bloggerName || "작성자 미표시"}</p>
+            <p className="mt-1 leading-5 text-[#817787]">{item.description}</p>
+          </div>)}
+          <p className="text-[10px] leading-5 text-[#A49AA9]">검색 결과는 참고용 블로그 글입니다. 작성자의 경험·의견을 공식 사실로 사용하지 말고, 가격·운영시간·정책 등은 공식 출처로 별도 확인하세요. 검색 결과는 ChatGPT 초안 요청에도 함께 전달됩니다.</p>
+        </div>}
+      </div>
       <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={9} placeholder="예: 주차 편했음 / 아이가 만들기 수업을 좋아함 / 책을 재미있게 읽어주심… 짧은 메모만 적어도 돼요." className="w-full rounded-xl border p-4 text-sm leading-7"/>
       <div className="rounded-xl border border-dashed p-4"><h4 className="text-sm font-semibold">사진 첨부 (최대 12장)</h4><input type="file" accept="image/*" multiple disabled={busy||photos.length>=12} onChange={e=>{void addPhotos(e.target.files);e.currentTarget.value="";}} className="mt-3 w-full text-xs"/>{photos.map((p,i)=><div key={p.id} className="mt-3 flex items-center gap-3 border-t pt-3"><img src={p.src} alt="" className="h-16 w-16 rounded-lg object-cover"/><div className="min-w-0 flex-1"><input value={p.caption} onChange={e=>setPhotos(old=>old.map((x,j)=>j===i?{...x,caption:e.target.value}:x))} placeholder="선택: 사진 설명" className="w-full rounded border p-2 text-xs"/><div className="mt-2 flex gap-3 text-xs"><button onClick={()=>movePhoto(i,-1)} disabled={!i}>위로</button><button onClick={()=>movePhoto(i,1)} disabled={i===photos.length-1}>아래로</button><button onClick={()=>setPhotos(old=>old.filter((_,j)=>j!==i))} className="text-rose-700">삭제</button></div></div></div>)}</div>
       <button onClick={()=>setShowTips(v=>!v)} className="text-xs font-semibold text-[#665174]">{showTips?"▾":"▸"} 이번 글 작성 팁 (선택)</button>{showTips&&<textarea value={tips} onChange={e=>setTips(e.target.value)} rows={3} placeholder="이번 글에만 적용할 요청사항" className="w-full rounded-xl border p-3 text-sm"/>}
