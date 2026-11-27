@@ -98,6 +98,7 @@ export default function Home() {
   const [showIdeas, setShowIdeas] = useState(false);
   const [topicMode, setTopicMode] = useState<"direct" | "popular" | "category" | null>(null);
   const [directKeyword, setDirectKeyword] = useState("");
+  const [homeSearchKeyword, setHomeSearchKeyword] = useState("");
   const [popularKeyword, setPopularKeyword] = useState("");
   const [topicCategory, setTopicCategory] = useState<Category | "">("");
   const [selectedIdea, setSelectedIdea] = useState<number | null>(null);
@@ -202,9 +203,9 @@ export default function Home() {
 
   const navItems = [
     { id: "home" as const, label: "홈", icon: "⌂" },
-    { id: "keywords" as const, label: "키워드 연구소", icon: "⌕" },
     { id: "writing" as const, label: "글쓰기", icon: "✎" },
-    { id: "calendar" as const, label: "콘텐츠 캘린더", icon: "▦" },
+    { id: "calendar" as const, label: "캘린더", icon: "▦" },
+    { id: "keywords" as const, label: "트렌드", icon: "⌕" },
     { id: "templates" as const, label: "인기글 분석·템플릿", icon: "▤" },
   ];
 
@@ -243,54 +244,33 @@ export default function Home() {
 
           {page === "home" && (
             <>
-              <section className="mb-7 rounded-3xl border border-[#EAE4ED] bg-white px-5 py-6 sm:px-7 sm:py-8">
+              <section className="mb-8 rounded-3xl border border-[#EAE4ED] bg-white px-5 py-6 sm:px-7 sm:py-8">
                 <p className="text-[10px] font-semibold tracking-[0.2em] text-[#9A8AA4]">PICKMOM BLOG STUDIO</p>
-                <h2 className="mt-3 text-2xl font-semibold leading-snug text-[#332B38] sm:text-3xl">오늘의 발행 주제는?</h2>
-                <p className="mt-2 text-sm text-[#817787]">아래 세 가지 방법 중 하나로 주제를 선택하세요.</p>
+                <h2 className="mt-3 text-2xl font-semibold leading-snug text-[#332B38] sm:text-3xl">오늘은 어떤 이야기를 기록할까요?</h2>
+                <p className="mt-2 text-sm text-[#817787]">키워드를 검색하면 트렌드 화면에서 추천 키워드와 연관 키워드를 살펴볼 수 있어요.</p>
+                <form className="mt-6 flex flex-col gap-2 sm:flex-row" onSubmit={(event) => { event.preventDefault(); if (homeSearchKeyword.trim()) { setDirectKeyword(homeSearchKeyword.trim()); navigate("keywords"); } }}>
+                  <input value={homeSearchKeyword} onChange={(event) => setHomeSearchKeyword(event.target.value)} placeholder="키워드를 검색하세요. 예: 아이와 겨울여행" className="min-w-0 flex-1 rounded-xl border border-[#E6E0E8] bg-white px-4 py-3.5 text-sm outline-none focus:border-[#80678F]" />
+                  <button type="submit" disabled={!homeSearchKeyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#574364] disabled:cursor-not-allowed disabled:bg-[#C9C1CE]">키워드 발굴하기 →</button>
+                </form>
+              </section>
 
-                <div className="mt-6 grid gap-3 lg:grid-cols-3">
-                  <button type="button" onClick={() => setTopicMode("direct")} className={`rounded-2xl border p-4 text-left transition ${topicMode === "direct" ? "border-[#80678F] bg-[#F8F4FA] ring-1 ring-[#80678F]" : "border-[#ECE8EA] bg-white hover:bg-[#FAF9FA]"}`}>
-                    <span className="text-xs font-semibold text-[#80678F]">① 키워드 직접 입력</span>
-                    <span className="mt-2 block text-sm font-medium text-[#39313E]">작성하고 싶은 키워드를 입력하세요.</span>
-                  </button>
-                  <button type="button" onClick={() => setTopicMode("popular")} className={`rounded-2xl border p-4 text-left transition ${topicMode === "popular" ? "border-[#80678F] bg-[#F8F4FA] ring-1 ring-[#80678F]" : "border-[#ECE8EA] bg-white hover:bg-[#FAF9FA]"}`}>
-                    <span className="text-xs font-semibold text-[#80678F]">② 요즘 인기 주제 키워드</span>
-                    <span className="mt-2 block text-sm font-medium text-[#39313E]">인기 키워드 중 하나를 선택</span>
-                  </button>
-                  <button type="button" onClick={() => setTopicMode("category")} className={`rounded-2xl border p-4 text-left transition ${topicMode === "category" ? "border-[#80678F] bg-[#F8F4FA] ring-1 ring-[#80678F]" : "border-[#ECE8EA] bg-white hover:bg-[#FAF9FA]"}`}>
-                    <span className="text-xs font-semibold text-[#80678F]">③ 카테고리 선택</span>
-                    <span className="mt-2 block text-sm font-medium text-[#39313E]">관심 분야 하나를 선택</span>
-                  </button>
+              <section className="mb-8">
+                <div className="mb-4 flex items-end justify-between gap-3">
+                  <div><h2 className="text-lg font-semibold">이번 주 추천 포스팅 7개</h2><p className="mt-1 text-xs text-[#A49AA9]">관심 분야와 시즌별 콘텐츠 아이디어를 바탕으로 구성합니다.</p></div>
+                  <span className="shrink-0 text-[10px] text-[#9A8AA4]">WEEKLY IDEAS</span>
                 </div>
-
-                {topicMode === "direct" && (
-                  <div className="mt-4">
-                    <label htmlFor="home-direct-keyword" className="mb-2 block text-xs font-medium text-[#716777]">작성할 키워드</label>
-                    <input id="home-direct-keyword" value={directKeyword} onChange={(e) => setDirectKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && directKeyword.trim()) startWriting(directKeyword.trim(), directKeyword.trim()); }} placeholder="예: 아이와 겨울여행" className="w-full rounded-xl border border-[#E6E0E8] bg-white px-4 py-3 text-sm outline-none focus:border-[#80678F]" />
-                  </div>
-                )}
-                {topicMode === "popular" && (
-                  <div className="mt-4">
-                    <p className="mb-2 text-xs font-medium text-[#716777]">추천 키워드 중 하나를 선택</p>
-                    <div className="flex flex-wrap gap-2">
-                      {ideas.slice(0, 5).map((idea) => <button key={idea.keyword} type="button" onClick={() => setPopularKeyword(idea.keyword)} className={`rounded-full border px-3 py-2 text-xs transition ${popularKeyword === idea.keyword ? "border-[#80678F] bg-[#80678F] text-white" : "border-[#EAE6E8] bg-white text-[#716777]"}`}>{idea.keyword}</button>)}
-                    </div>
-                    <p className="mt-2 text-[10px] leading-5 text-[#A49AA9]">※ 현재는 편집 추천 키워드 예시입니다. 실시간 인기 순위나 검색량 데이터가 아닙니다.</p>
-                  </div>
-                )}
-                {topicMode === "category" && (
-                  <div className="mt-4">
-                    <p className="mb-2 text-xs font-medium text-[#716777]">관심 카테고리 하나를 선택</p>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {(["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"] as Category[]).map((category) => <button key={category} type="button" onClick={() => setTopicCategory(category)} className={`rounded-xl border px-3 py-3 text-sm transition ${topicCategory === category ? "border-[#80678F] bg-[#F3EDF6] font-semibold text-[#634B78]" : "border-[#ECE8EA] bg-white text-[#716777]"}`}>{category}</button>)}
-                    </div>
-                  </div>
-                )}
-                <button type="button" disabled={!topicMode || (topicMode === "direct" && !directKeyword.trim()) || (topicMode === "popular" && !popularKeyword) || (topicMode === "category" && !topicCategory)} onClick={() => {
-                  if (topicMode === "direct" && directKeyword.trim()) startWriting(directKeyword.trim(), directKeyword.trim());
-                  if (topicMode === "popular" && popularKeyword) startWriting(popularKeyword, popularKeyword);
-                  if (topicMode === "category" && topicCategory) startWriting("", "", topicCategory);
-                }} className="mt-6 w-full rounded-xl bg-[#665174] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#574364] disabled:cursor-not-allowed disabled:bg-[#C9C1CE] sm:w-auto">키워드 발굴하기 →</button>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {ideas.slice(0, 7).map((idea, i) => (
+                    <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
+                      <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">IDEA {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
+                      <h3 className="mt-3 text-sm font-semibold leading-6">{idea.title}</h3>
+                      <p className="mt-2 text-xs text-[#918995]">핵심 키워드 · {idea.keyword}</p>
+                      <p className="mt-3 text-xs leading-5 text-[#817787]">{idea.why}</p>
+                      <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose)} className="mt-4 rounded-lg bg-[#665174] px-3 py-2.5 text-xs font-semibold text-white">이 주제로 바로 글쓰기 →</button>
+                    </article>
+                  ))}
+                </div>
+                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">※ 현재 표시된 추천 주제는 편집용 예시입니다. 실시간 인기 키워드나 개인 관심사 기반 추천으로 오인되지 않도록 실제 데이터 연결 전까지 예시임을 표시합니다.</p>
               </section>
 
               <section className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -299,28 +279,13 @@ export default function Home() {
                 <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5"><p className="text-xs text-[#918995]">캘린더 등록</p><p className="mt-2 text-3xl font-semibold text-[#665174]">{posts.length}<span className="text-sm font-normal text-[#A49AA9]"> 편</span></p><p className="mt-2 text-xs text-[#A49AA9]">저장된 아이디어와 원고</p></div>
               </section>
 
-              <section className="mb-8">
-                <div className="mb-4 flex items-end justify-between"><div><h2 className="text-lg font-semibold">이번 주 추천 포스팅 5개</h2><p className="mt-1 text-xs text-[#A49AA9]">콘텐츠 분야를 섞어 발행 리듬을 만드는 편집 아이디어</p></div><button onClick={() => setShowIdeas(!showIdeas)} className="text-xs font-semibold text-[#715B80]">{showIdeas ? "접기" : "전체 보기"} →</button></div>
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {ideas.slice(0, showIdeas ? ideas.length : 5).map((idea, i) => (
-                    <div key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                      <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">IDEA {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
-                      <h3 className="mt-3 text-sm font-semibold leading-6">{idea.title}</h3><p className="mt-2 text-xs text-[#918995]">키워드 제안 · {idea.keyword}</p><p className="mt-3 text-xs leading-5 text-[#817787]">{idea.why}</p>
-                      <div className="mt-4 flex gap-2"><button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose)} className="rounded-lg bg-[#665174] px-3 py-2 text-xs font-semibold text-white">이 주제로 글쓰기</button><button onClick={() => addIdeaToCalendar(idea)} className="rounded-lg border border-[#EAE6E8] px-3 py-2 text-xs text-[#716777]">캘린더에 저장</button></div>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">※ 위 5개는 편집 방향을 보여주는 예시 아이디어이며 실시간 인기 순위나 검색량 데이터가 아닙니다. 실제 검색어/API 연동은 별도 영역으로 유지합니다.</p>
-              </section>
-
               <section className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
                 <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">최근 작업</h2><button onClick={() => navigate("calendar")} className="text-xs text-[#715B80]">캘린더 보기 →</button></div>
                 {posts.length === 0 ? <p className="py-6 text-center text-sm text-[#A49AA9]">아직 저장한 글이 없어요. 추천 주제로 첫 글을 시작해 보세요.</p> : <div className="space-y-3">{posts.slice(0, 4).map((post) => <button key={post.id} onClick={() => editPost(post)} className="flex w-full items-center justify-between gap-3 border-b border-[#F1EEF0] pb-3 text-left last:border-0 last:pb-0"><span className="min-w-0"><span className="block truncate text-sm font-medium">{post.title}</span><span className="mt-1 block text-[10px] text-[#A49AA9]">{post.category} · {post.date}</span></span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] ${statusClass[post.status]}`}>{post.status}</span></button>)}</div>}
               </section>
             </>
           )}
-
-          {page === "keywords" && <section className="rounded-2xl border border-[#ECE8EA] bg-white p-4 sm:p-6"><div className="mb-5"><h2 className="font-semibold">키워드 연구소</h2><p className="mt-1 text-xs leading-5 text-[#918995]">기존 키워드 분석 화면을 유지합니다. 검색 API 연결이나 인증 설정은 이번 화면 개편에서 변경하지 않습니다.</p></div><CompetitorAnalysis onSelectKeyword={(keyword) => startWriting(keyword, keyword)} /></section>}
+          {page === "keywords" && <section className="rounded-2xl border border-[#ECE8EA] bg-white p-4 sm:p-6"><div className="mb-5"><h2 className="font-semibold">키워드 연구소</h2><p className="mt-1 text-xs leading-5 text-[#918995]">기존 키워드 분석 화면을 유지합니다. 검색 API 연결이나 인증 설정은 이번 화면 개편에서 변경하지 않습니다.</p></div><CompetitorAnalysis initialKeyword={directKeyword} onSelectKeyword={(keyword) => startWriting(keyword, keyword)} /></section>}
 
           {page === "templates" && <PopularPostTemplates />}
 
