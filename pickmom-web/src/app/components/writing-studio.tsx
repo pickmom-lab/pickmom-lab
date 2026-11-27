@@ -2,21 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type Category = "맛집·카페" | "여행·체험" | "교육 정보" | "리빙·제품" | "쇼핑·제품" | "부동산·주거" | "생활·정책";
+type Category = "맛집·카페" | "여행·체험" | "교육 정보" | "리빙·제품" | "생활·정책" | "부동산·주거";
 type Purpose = "정보" | "실사용 후기" | "비교" | "문제 해결";
 type Photo = { id: string; src: string; caption: string };
 type Props = {
   initialKeyword?: string;
+  initialCategory?: Category;
   initialData?: string;
   onSave: (v: { title: string; keyword: string; category: Category; purpose: string; date: string; draft: string; photos: string[]; formData: string; status: "원고 작성" | "발행 준비" }) => void;
 };
-const categories: Category[] = ["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "쇼핑·제품", "생활·정책", "부동산·주거"];
+const categories: Category[] = ["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
 const purposes: Purpose[] = ["정보", "실사용 후기", "비교", "문제 해결"];
-const detect = (s: string): Category => /맛집|식당|카페|디저트|빵|케이크|쿠키|국수|음식/.test(s) ? "맛집·카페" : /여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(s) ? "여행·체험" : /영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(s) ? "교육 정보" : /지원금|정책|신청|정부|할인|혜택|공휴일/.test(s) ? "생활·정책" : /부동산|아파트|전세|월세|청약|이사|주거/.test(s) ? "부동산·주거" : /선물|추천|구매|가격|제품|상품|쇼핑/.test(s) ? "쇼핑·제품" : "리빙·제품";
-const today = () => new Date().toISOString().slice(0, 10);
-export default function WritingStudio({ initialKeyword = "", initialData, onSave }: Props) {
+const detect = (s: string): Category => /맛집|식당|카페|디저트|빵|케이크|쿠키|국수|음식/.test(s) ? "맛집·카페" : /여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(s) ? "여행·체험" : /영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(s) ? "교육 정보" : /지원금|정책|신청|정부|할인|혜택|공휴일/.test(s) ? "생활·정책" : /부동산|아파트|전세|월세|청약|이사|주거/.test(s) ? "부동산·주거" : "리빙·제품";
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+export default function WritingStudio({ initialKeyword = "", initialCategory, initialData, onSave }: Props) {
   const [keyword, setKeyword] = useState(initialKeyword);
-  const [category, setCategory] = useState<Category>(detect(initialKeyword));
+  const [category, setCategory] = useState<Category>(initialCategory || detect(initialKeyword));
   const [purpose, setPurpose] = useState<Purpose>(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보");
   const [date, setDate] = useState(today());
   const [notes, setNotes] = useState("");
@@ -28,22 +29,24 @@ export default function WritingStudio({ initialKeyword = "", initialData, onSave
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(detect(initialKeyword)); setPurpose(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보"); }
-  }, [initialKeyword, initialData]);
+    if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(initialCategory || detect(initialKeyword)); setPurpose(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보"); }
+  }, [initialKeyword, initialCategory, initialData]);
   useEffect(() => {
     if (!initialData) return;
     try {
       const d = JSON.parse(initialData);
       setKeyword(d.keyword || initialKeyword);
       setTitle(d.title || d.keyword || initialKeyword);
-      setCategory(d.category || detect(d.keyword || initialKeyword));
+      setCategory(d.category || initialCategory || detect(d.keyword || initialKeyword));
       setPurpose(d.purpose === "직접 경험·방문 후기" ? "실사용 후기" : d.purpose === "비교·분석" ? "비교" : d.purpose === "문제 해결·노하우" ? "문제 해결" : "정보");
       setDate(d.date || today());
       setNotes(d.notes || Object.values(d.values || {}).filter(Boolean).join("\n"));
+      setDraft(typeof d.draft === "string" ? d.draft : "");
+      setTips(d.tips || "");
       setPhotos((d.photos || []).map((p: any, i: number) => typeof p === "string" ? { id: String(i), src: p, caption: "" } : p));
       setStep(3);
     } catch { /* Keep a fresh editor if legacy data cannot be parsed. */ }
-  }, [initialData, initialKeyword]);
+  }, [initialData, initialKeyword, initialCategory]);
   const titleIdeas = useMemo(() => {
     const k = keyword.trim() || "주제";
     return purpose === "실사용 후기"
@@ -72,7 +75,7 @@ export default function WritingStudio({ initialKeyword = "", initialData, onSave
     return next;
   });
   const save = (status: "원고 작성" | "발행 준비") => {
-    const data = { keyword, title, category, purpose, date, notes, tips, photos };
+    const data = { keyword, title, category, purpose, date, notes, tips, photos, draft };
     onSave({ title: title || keyword, keyword, category, purpose, date, draft, photos: photos.map(p => p.src), formData: JSON.stringify(data), status });
   };
   return <section className="mx-auto max-w-4xl space-y-5 pb-8">
@@ -96,10 +99,10 @@ export default function WritingStudio({ initialKeyword = "", initialData, onSave
       <p className="text-[10px] leading-5 text-[#A49AA9]">현재 이 버전에는 외부 AI 조사·작성 API가 아직 연결되지 않았습니다. 실제 검색·출처 검증·AI 원고 생성이 연결되기 전에는 생성 완료나 검증 완료로 표시하지 않습니다.</p>
     </div>}
     {step===3 && <div className="rounded-2xl border bg-white p-5 md:p-6">
-      <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">통합 원고 편집기</h3><p className="mt-1 text-xs text-[#918995]">제목과 본문을 한 화면에서 수정합니다.</p></div><button onClick={()=>setStep(2)} className="text-xs text-[#665174]">← 입력 수정</button></div>
-      <div className="mt-4"><p className="mb-2 text-xs font-semibold">제목 후보</p><div className="space-y-2">{titleIdeas.map((x,i)=><button key={x} onClick={()=>setTitle(x)} className={`block w-full rounded-lg border p-3 text-left text-xs leading-5 ${title===x?"border-[#8D789C] bg-[#F7F3F9]":"border-[#ECE8EA]"}`}>{i+1}. {x}</button>)}</div><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="직접 제목 입력" className="mt-3 w-full rounded-xl border p-3 text-sm"/></div>
-      <label className="mt-4 block text-xs font-semibold">본문<textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={20} placeholder="조사와 원고 생성 API가 연결되면 이곳에 근거가 포함된 초안이 생성됩니다. 현재는 직접 작성하거나 붙여넣어 편집할 수 있습니다." className="mt-2 w-full rounded-xl border p-4 text-sm leading-7 font-normal"/></label>
-      <div className="mt-4 rounded-xl bg-[#F8F5F9] p-4"><p className="text-xs font-semibold text-[#665174]">SEO 최종 확인 항목</p><ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-[#817787]"><li>핵심 키워드와 검색 의도에 답하고 있는가</li><li>주소·가격·영업시간 등 변동 정보의 출처와 확인일을 표시했는가</li><li>실제 경험과 외부에서 확인한 사실을 구분했는가</li><li>연관 표현이 자연스럽고 반복이 과도하지 않은가</li><li>사진 설명과 문단 구성이 독자의 이해를 돕는가</li></ul></div>
+      <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">통합 원고 편집기</h3><p className="mt-1 text-xs text-[#918995]">제목과 본문을 한 화면에서 직접 수정합니다. 외부 AI 조사·원고 생성은 아직 연결되지 않았습니다.</p></div><button onClick={()=>setStep(2)} className="text-xs text-[#665174]">← 입력 수정</button></div>
+      <div className="mt-4"><p className="mb-1 text-xs font-semibold">제목 구성 예시</p><p className="mb-2 text-[10px] text-[#A49AA9]">키워드와 글 유형을 바탕으로 만든 문장 예시입니다. AI 조사·분석 결과는 아닙니다.</p><div className="space-y-2">{titleIdeas.map((x,i)=><button key={x} onClick={()=>setTitle(x)} className={`block w-full rounded-lg border p-3 text-left text-xs leading-5 ${title===x?"border-[#8D789C] bg-[#F7F3F9]":"border-[#ECE8EA]"}`}>{i+1}. {x}</button>)}</div><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="직접 제목 입력" className="mt-3 w-full rounded-xl border p-3 text-sm"/></div>
+      <label className="mt-4 block text-xs font-semibold">본문<textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={20} placeholder="조사한 자료나 직접 작성한 내용을 붙여넣고 편집하세요. AI 조사·원고 생성 기능은 아직 연결되지 않았습니다." className="mt-2 w-full rounded-xl border p-4 text-sm leading-7 font-normal"/></label>
+      <div className="mt-4 rounded-xl bg-[#F8F5F9] p-4"><p className="text-xs font-semibold text-[#665174]">발행 전 직접 확인할 항목</p><ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-[#817787]"><li>핵심 키워드와 검색 의도에 답하고 있는가</li><li>주소·가격·영업시간 등 변동 정보의 출처와 확인일을 표시했는가</li><li>실제 경험과 외부에서 확인한 사실을 구분했는가</li><li>연관 표현이 자연스럽고 반복이 과도하지 않은가</li><li>사진 설명과 문단 구성이 독자의 이해를 돕는가</li></ul></div>
       <label className="mt-4 block text-xs text-[#817787]">발행 예정일<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-2 w-full rounded-xl border p-3 text-sm"/></label>
       <div className="mt-5 flex flex-wrap gap-2"><button onClick={()=>save("원고 작성")} className="rounded-xl border px-4 py-3 text-sm">임시 저장</button><button onClick={()=>save("발행 준비")} className="rounded-xl bg-[#665174] px-4 py-3 text-sm text-white">발행 준비 저장</button><button onClick={()=>navigator.clipboard?.writeText(draft)} className="rounded-xl border px-4 py-3 text-sm">본문 복사</button><a href="https://blog.naver.com/" target="_blank" rel="noreferrer" className="rounded-xl border px-4 py-3 text-sm">네이버 블로그 열기</a></div>
     </div>}
