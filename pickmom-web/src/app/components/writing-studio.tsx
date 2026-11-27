@@ -1,14 +1,14 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-type C="맛집·카페"|"여행·체험"|"교육 정보"|"리빙·제품"|"부동산·주거"|"생활·정책";
+type C="맛집·카페"|"여행·체험"|"교육 정보"|"리빙·제품"|"쇼핑·제품"|"부동산·주거"|"생활·정책";
 type P="직접 경험·방문 후기"|"비교·분석"|"정보 전달"|"추천·소개"|"문제 해결·노하우";
 type Photo={id:string;src:string;caption:string};
 type F={key:string;label:string;multi?:boolean};
 type Props={initialKeyword?:string;initialData?:string;onSave:(v:{title:string;keyword:string;category:C;purpose:P;date:string;draft:string;photos:string[];formData:string;status:"원고 작성"|"발행 준비"})=>void};
-const cats:C[]=["맛집·카페","여행·체험","교육 정보","리빙·제품","부동산·주거","생활·정책"];
+const cats:C[]=["맛집·카페","여행·체험","교육 정보","쇼핑·제품","리빙·제품","부동산·주거","생활·정책"];
 const purposes:P[]=["직접 경험·방문 후기","비교·분석","정보 전달","추천·소개","문제 해결·노하우"];
 const cf:Record<C,F[]>={
-"맛집·카페":[["방문 날짜","방문 날짜"],["매장명","매장명 및 위치"],["reason","방문 이유"],["menu","주문 메뉴와 메뉴별 가격"],["taste","실제 먹어본 후기"],["pros","좋았던 점과 아쉬운 점"],["parking","주차 및 대기 정보"],["again","재방문 의사"]].map(x=>({key:x[0],label:x[1],multi:["reason","menu","taste","pros","parking"].includes(x[0])})),
+"맛집·카페":[["visitDate","방문 날짜"],["매장명","매장명 및 위치"],["reason","방문 이유"],["menu","주문 메뉴와 메뉴별 가격"],["taste","실제 먹어본 후기"],["pros","좋았던 점과 아쉬운 점"],["parking","주차 및 대기 정보"],["again","재방문 의사"]].map(x=>({key:x[0],label:x[1],multi:["reason","menu","taste","pros","parking"].includes(x[0])})),
 "여행·체험":["방문 장소","방문 날짜","동행 인원 및 아이 연령","예약 및 이용 방법","이용 시설과 프로그램","실제 경험과 아이들의 반응","좋았던 점과 아쉬운 점","비용 및 주차 정보"].map((x,i)=>({key:"t"+i,label:x,multi:[3,4,5,6,7].includes(i)})),
 "교육 정보":["교육 주제","대상 연령","관련 기관 및 교육 과정","핵심 정보","준비 사항","일정 및 비용","공식 자료 및 참고 링크"].map((x,i)=>({key:"e"+i,label:x,multi:[3,4,6].includes(i)})),
 "리빙·제품":["제품명 및 종류","주요 특징 및 사양","가격 및 구매처","사용 상황과 기간","실제 사용 후기","장점과 아쉬운 점","추천 대상"].map((x,i)=>({key:"p"+i,label:x,multi:[1,3,4,5].includes(i)})),
@@ -16,7 +16,7 @@ const cf:Record<C,F[]>={
 "생활·정책":["정책·지원 제도명","지원 대상 및 자격","지원 내용 및 금액","신청 기간 및 일정","신청 방법 및 준비 서류","주의사항 및 확인할 점","공식 자료 및 참고 링크"].map((x,i)=>({key:"l"+i,label:x,multi:[2,4,5,6].includes(i)}))
 };
 const pf:Record<P,F[]>={"직접 경험·방문 후기":[{key:"background",label:"방문·구매·이용 배경",multi:true},{key:"takeaway",label:"기억에 남는 점과 총평",multi:true}],"비교·분석":[{key:"items",label:"비교 대상",multi:true},{key:"criteria",label:"비교 기준",multi:true},{key:"compare",label:"차이와 장단점",multi:true},{key:"conclusion",label:"상황별 선택 기준",multi:true}],"정보 전달":[{key:"core",label:"전달할 핵심 내용",multi:true},{key:"checked",label:"정보 확인 기준일"},{key:"sources",label:"출처별 확인 내용",multi:true}],"추천·소개":[{key:"target",label:"추천 대상"},{key:"why",label:"추천 이유",multi:true},{key:"alternative",label:"함께 고려할 대안",multi:true}],"문제 해결·노하우":[{key:"problem",label:"독자가 겪는 문제·상황",multi:true},{key:"solution",label:"해결 방법 및 단계",multi:true},{key:"caution",label:"주의사항과 실패 방지 팁",multi:true}]};
-function detect(s:string):C{if(/맛집|식당|카페|디저트|빵|케이크|쿠키|국수|음식/.test(s))return"맛집·카페";if(/여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(s))return"여행·체험";if(/영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(s))return"교육 정보";if(/지원금|정책|신청|정부|할인|혜택|공휴일/.test(s))return"생활·정책";if(/부동산|아파트|전세|월세|청약|이사|주거/.test(s))return"부동산·주거";return"리빙·제품";}
+function detect(s:string):C{if(/맛집|식당|카페|디저트|빵|케이크|쿠키|국수|음식/.test(s))return"맛집·카페";if(/여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(s))return"여행·체험";if(/영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(s))return"교육 정보";if(/지원금|정책|신청|정부|할인|혜택|공휴일/.test(s))return"생활·정책";if(/부동산|아파트|전세|월세|청약|이사|주거/.test(s))return"부동산·주거";if(/선물|추천|구매|가격|제품|상품|쇼핑/.test(s))return"쇼핑·제품";return"리빙·제품";}
 function fresh(k:string){const c=detect(k);return{keyword:k,title:k,category:c,purpose:(c==="맛집·카페"||c==="여행·체험"?"직접 경험·방문 후기":"정보 전달") as P,date:new Date().toISOString().slice(0,10),values:{} as Record<string,string>,photos:[] as Photo[]};}
 export default function WritingStudio({initialKeyword="",initialData,onSave}:Props){
 const [d,S]=useState<any>(()=>{try{return initialData?JSON.parse(initialData):fresh(initialKeyword)}catch{return fresh(initialKeyword)}});const [step,T]=useState<1|2|3>(1);const [draft,D]=useState("");const [busy,B]=useState(false);
