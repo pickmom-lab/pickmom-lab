@@ -9,32 +9,23 @@ const trends = [
   { keyword: "서울 실내 아이랑", category: "여행·나들이", change: "꾸준한 관심", intent: "장소·비용·주차" },
 ];
 
-const relatedSeeds = [
-  "가볼 만한 곳",
-  "추천",
-  "후기",
-  "가격",
-  "비교",
-  "예약 방법",
-];
-
 function makeKeywordRows(keyword: string) {
   const base = keyword.trim();
   if (!base) return { recommended: [], related: [] };
-  const recommended = [
-    { word: base, kind: "입력한 키워드" },
-    { word: `${base} 추천`, kind: "추천 확장" },
-    { word: `${base} 후기`, kind: "추천 확장" },
-    { word: `${base} 가격`, kind: "추천 확장" },
+  const recommendedSuffixes = ["", "추천", "후기", "가격", "비교", "장단점", "선택 기준", "예약", "비용", "주차"];
+  const recommended = recommendedSuffixes.map((suffix, index) => ({
+    word: suffix ? `${base} ${suffix}` : base,
+    kind: index === 0 ? "입력한 키워드" : "추천 확장",
+  }));
+  const relatedSuffixes = [
+    "가볼 만한 곳", "실제 후기", "준비물", "꿀팁", "주의사항", "비용 총정리",
+    "예약 방법", "주차 정보", "가족 추천", "추천 코스", "초보 가이드", "최신 정보",
   ];
   const recommendedWords = new Set(recommended.map((row) => row.word));
-  return {
-    recommended,
-    // 추천 키워드에 이미 노출된 표현은 연관 키워드에서 제외해 중복 선택을 방지합니다.
-    related: relatedSeeds
-      .map((suffix) => ({ word: `${base} ${suffix}`, kind: "연관 확장" }))
-      .filter((row) => !recommendedWords.has(row.word)),
-  };
+  const related = relatedSuffixes
+    .map((suffix) => ({ word: `${base} ${suffix}`, kind: "연관 확장" }))
+    .filter((row) => !recommendedWords.has(row.word));
+  return { recommended, related };
 }
 
 export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "" }: { onSelectKeyword: (keyword: string) => void; initialKeyword?: string }) {
@@ -47,23 +38,15 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
   const [loadingCounts, setLoadingCounts] = useState(false);
   const [apiError, setApiError] = useState("");
 
-  useEffect(() => {
-    if (initialKeyword.trim()) {
-      setKeyword(initialKeyword);
-      setTab("analyze");
-      setSearched(false);
-      setSelectedKeyword("");
-    }
-  }, [initialKeyword]);
-
   const rows = useMemo(() => makeKeywordRows(keyword), [keyword]);
   const copy = (value: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) navigator.clipboard.writeText(value);
     setToast("복사했어요.");
   };
-  const runAnalysis = async () => {
-    const query = keyword.trim();
+  const runAnalysis = async (targetKeyword = keyword) => {
+    const query = targetKeyword.trim();
     if (!query) return;
+    setKeyword(query);
     setSearched(true);
     setSelectedKeyword("");
     setDocumentCounts({});
@@ -88,6 +71,15 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
     else if (failures > 0) setApiError(failures + "개 키워드의 문서 수를 불러오지 못했어요.");
     setLoadingCounts(false);
   };
+
+  useEffect(() => {
+    const incoming = initialKeyword.trim();
+    if (!incoming) return;
+    setTab("analyze");
+    void runAnalysis(incoming);
+    // initialKeyword가 바뀔 때만 홈에서 전달된 검색어를 자동 분석합니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialKeyword]);
 
   return (
     <section className="mx-auto max-w-6xl space-y-5 pb-8">
@@ -118,7 +110,7 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
             <p className="mt-1 text-xs text-[#A49AA9]">시즌·교육·여행·맛집 등 블로그에 쓸 만한 주제를 빠르게 탐색합니다.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {trends.map((item) => (
-                <button key={item.keyword} onClick={() => { setKeyword(item.keyword); setTab("analyze"); setSearched(false); setSelectedKeyword(""); }} className="rounded-xl border border-[#F0ECF1] p-4 text-left hover:border-[#B9A7C5]">
+                <button key={item.keyword} onClick={() => { setTab("analyze"); void runAnalysis(item.keyword); }} className="rounded-xl border border-[#F0ECF1] p-4 text-left hover:border-[#B9A7C5]">
                   <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#9B82AC]">{item.category}</span><span className="text-[10px] text-[#A49AA9]">{item.change}</span></div>
                   <p className="mt-2 text-sm font-semibold text-[#51445A]">{item.keyword}</p>
                   <p className="mt-2 text-[11px] text-[#918995]">검색 의도: {item.intent}</p>
@@ -141,10 +133,10 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
         <>
           <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
             <h3 className="font-semibold">분석할 키워드</h3>
-            <p className="mt-1 text-xs text-[#A49AA9]">처음 입력한 검색어를 확인하고, 필요하면 수정한 뒤 분석을 실행하세요.</p>
+            <p className="mt-1 text-xs text-[#A49AA9]">검색어를 수정하면 다시 분석할 수 있어요. 홈에서 넘어온 검색어는 자동으로 분석됩니다.</p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setSearched(false); setSelectedKeyword(""); setDocumentCounts({}); setApiError(""); }} onKeyDown={(e) => { if (e.key === "Enter") runAnalysis(); }} placeholder="분석할 키워드 입력" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
-              <button onClick={runAnalysis} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">분석 실행</button>
+              <button onClick={runAnalysis} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">{loadingCounts ? "분석 중…" : "다시 분석"}</button>
             </div>
           </div>
 
@@ -152,12 +144,12 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
             <>
               <div className="rounded-2xl border border-[#E9E1ED] bg-[#F8F5F9] p-4">
                 <p className="text-xs font-semibold text-[#665174]">‘{keyword}’ 키워드 후보</p>
-                <p className="mt-1 text-xs leading-5 text-[#817787]">아래 두 영역에서 글쓰기에 사용할 키워드 하나를 선택하세요. 선택은 두 영역 전체에서 한 번에 하나만 가능합니다.</p>
+                <p className="mt-1 text-xs leading-5 text-[#817787]">검색 의도를 기준으로 확장한 후보입니다. 아래 두 영역에서 글쓰기에 사용할 키워드 하나를 선택하세요.</p>
               </div>
 
               <KeywordSection
                 title="추천 키워드"
-                description="입력한 키워드와 글쓰기 주제를 구체화할 수 있는 확장 후보입니다."
+                description="입력한 키워드와 구체적인 선택·비교·구매 의도를 반영한 후보입니다."
                 rows={rows.recommended}
                 documentCounts={documentCounts}
                 loadingCounts={loadingCounts}
@@ -167,7 +159,7 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
 
               <KeywordSection
                 title="연관 키워드"
-                description="검색 의도를 세분화해 함께 검토할 수 있는 연관 표현입니다."
+                description="장소·후기·준비·비용·이용 방법 등 실제 정보 탐색에 쓰이는 표현을 확장했습니다."
                 rows={rows.related}
                 documentCounts={documentCounts}
                 loadingCounts={loadingCounts}
@@ -198,7 +190,7 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
       )}
 
       {toast && <div role="status" className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#51445A] px-4 py-2 text-xs text-white shadow-lg">{toast}<button onClick={() => setToast("")} className="ml-3">닫기</button></div>}
-      <p className="px-1 text-[10px] leading-5 text-[#A49AA9]">데이터 원칙: 현재 이 화면은 키워드 확장 후보를 보여주는 UI이며, 검색량·문서 수는 아직 API에 연결되지 않았습니다. 실제 값이 연결되기 전에는 숫자를 임의로 표시하지 않습니다. 현재 추천·연관 표현은 예시 확장어이며 실시간 검색량 기반 추천이 아닙니다.</p>
+      <p className="px-1 text-[10px] leading-5 text-[#A49AA9]">데이터 기준: 블로그 문서 수는 네이버 블로그 검색 결과의 전체 문서 수입니다. 월간 검색량 데이터는 현재 연동되어 있지 않아 표시하지 않습니다. 추천·연관 키워드는 검색 의도 기반 확장 후보이며, 실제 검색량 순위로 검증된 목록은 아닙니다.</p>
     </section>
   );
 }
@@ -222,15 +214,13 @@ function KeywordSection({ title, description, rows, documentCounts, loadingCount
         <table className="w-full table-fixed text-left text-[10px] sm:text-xs">
           <colgroup>
             <col className="w-[12%]" />
-            <col className="w-[36%]" />
-            <col className="w-[24%]" />
-            <col className="w-[28%]" />
+            <col className="w-[58%]" />
+            <col className="w-[30%]" />
           </colgroup>
           <thead className="bg-[#FAF9FA] text-[#918995]">
             <tr>
               <th className="break-keep px-1.5 py-3 text-center sm:px-3">선택</th>
               <th className="break-keep px-1.5 py-3 sm:px-3">키워드</th>
-              <th className="break-keep px-1.5 py-3 sm:px-3">월 검색량</th>
               <th className="break-keep px-1.5 py-3 sm:px-3">블로그 문서 수</th>
             </tr>
           </thead>
@@ -246,7 +236,6 @@ function KeywordSection({ title, description, rows, documentCounts, loadingCount
                   <span className="font-medium text-[#51445A]">{row.word}</span>
                   <span className="mt-1 block text-[9px] text-[#806B8E] sm:inline sm:ml-2 sm:mt-0">{row.kind}</span>
                 </td>
-                <td className="break-words px-1.5 py-3 text-[#A49AA9] sm:px-3">별도 데이터 필요</td>
                 <td className="break-words px-1.5 py-3 text-[#665174] sm:px-3">{loadingCounts ? "조회 중…" : count === null ? "조회 실패" : count === undefined ? "—" : count.toLocaleString("ko-KR")}</td>
               </tr>
               );
