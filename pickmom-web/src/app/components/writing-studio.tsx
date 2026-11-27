@@ -24,7 +24,11 @@ useEffect(()=>{if(initialData){try{S(JSON.parse(initialData));T(3)}catch{}}else 
 useEffect(()=>{try{localStorage.setItem("pickmom-writing-draft-v1",JSON.stringify(d))}catch{}},[d]);
 const fields=useMemo(()=>[...cf[d.category as C],...pf[d.purpose as P]],[d.category,d.purpose]);
 const patch=(p:any)=>S((v:any)=>({...v,...p}));const val=(k:string,v:string)=>S((x:any)=>({...x,values:{...x.values,[k]:v}}));
-const compose=()=>"# "+(d.title||d.keyword)+"\n\n"+d.keyword+" 관련 내용을 "+d.purpose+" 관점에서 정리했어요.\n\n"+fields.map(f=>d.values?.[f.key]?"## "+f.label+"\n"+d.values[f.key]:"").filter(Boolean).join("\n\n")+"\n\n## 사진 캡션\n"+(d.photos||[]).map((p:Photo,i:number)=>(i+1)+". "+p.caption).join("\n")+"\n\n## 마무리\n변동 가능한 정보는 발행 전에 공식 자료로 확인해 주세요.");
+ const compose=()=>{
+  const sections=fields.map(f=>d.values?.[f.key]?(`## ${f.label}\n${d.values[f.key]}`):"").filter(Boolean).join("\n\n");
+  const captions=(d.photos||[]).map((p:Photo,i:number)=>`${i+1}. ${p.caption}`).join("\n");
+  return [`# ${d.title||d.keyword}`,`${d.keyword} 관련 내용을 ${d.purpose} 관점에서 정리했어요.`,sections,"## 사진 캡션",captions,"## 마무리","변동 가능한 정보는 발행 전에 공식 자료로 확인해 주세요."].filter(Boolean).join("\n\n");
+ };
 const add=async(files:FileList|null)=>{if(!files)return;B(true);const arr=await Promise.all(Array.from(files).slice(0,12-(d.photos?.length||0)).map(f=>new Promise<Photo>(resolve=>{const r=new FileReader();r.onload=()=>resolve({id:Math.random().toString(36),src:String(r.result),caption:""});r.readAsDataURL(f)})));S((v:any)=>({...v,photos:[...v.photos,...arr]}));B(false)};
 const move=(i:number,delta:number)=>S((v:any)=>{const a=[...v.photos],j=i+delta;if(j<0||j>=a.length)return v;[a[i],a[j]]=[a[j],a[i]];return{...v,photos:a}});
 const save=(status:"원고 작성"|"발행 준비")=>onSave({title:d.title||d.keyword,keyword:d.keyword,category:d.category,purpose:d.purpose,date:d.date,draft,photos:d.photos.map((p:Photo)=>p.src),formData:JSON.stringify(d),status});
