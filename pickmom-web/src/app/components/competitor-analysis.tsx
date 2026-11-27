@@ -43,6 +43,9 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
   const [searched, setSearched] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState("");
   const [toast, setToast] = useState("");
+  const [documentCounts, setDocumentCounts] = useState<Record<string, number | null>>({});
+  const [loadingCounts, setLoadingCounts] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   useEffect(() => {
     if (initialKeyword.trim()) {
@@ -58,10 +61,32 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
     if (typeof navigator !== "undefined" && navigator.clipboard) navigator.clipboard.writeText(value);
     setToast("복사했어요.");
   };
-  const runAnalysis = () => {
-    if (!keyword.trim()) return;
+  const runAnalysis = async () => {
+    const query = keyword.trim();
+    if (!query) return;
     setSearched(true);
     setSelectedKeyword("");
+    setDocumentCounts({});
+    setApiError("");
+    setLoadingCounts(true);
+    const candidates = makeKeywordRows(query);
+    const words = [...candidates.recommended, ...candidates.related].map((row) => row.word);
+    const results = await Promise.allSettled(words.map(async (word) => {
+      const response = await fetch("/api/naver/blog-search?query=" + encodeURIComponent(word), { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "블로그 검색에 실패했습니다.");
+      return [word, Number(data.total ?? 0)] as const;
+    }));
+    const nextCounts: Record<string, number | null> = {};
+    let failures = 0;
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") nextCounts[result.value[0]] = result.value[1];
+      else { nextCounts[words[index]] = null; failures += 1; }
+    });
+    setDocumentCounts(nextCounts);
+    if (failures === words.length) setApiError("네이버 API 연결에 실패했어요. Vercel 환경변수와 API 권한을 확인해 주세요.");
+    else if (failures > 0) setApiError(failures + "개 키워드의 문서 수를 불러오지 못했어요.");
+    setLoadingCounts(false);
   };
 
   return (
@@ -118,7 +143,7 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
             <h3 className="font-semibold">분석할 키워드</h3>
             <p className="mt-1 text-xs text-[#A49AA9]">처음 입력한 검색어를 확인하고, 필요하면 수정한 뒤 분석을 실행하세요.</p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setSearched(false); setSelectedKeyword(""); }} onKeyDown={(e) => { if (e.key === "Enter") runAnalysis(); }} placeholder="분석할 키워드 입력" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
+              <input value={keyword} onChange={(e) => { setKeyword(e.target.value); setSearched(false); setSelectedKeyword(""); setDocumentCounts({}); setApiError(""); }} onKeyDown={(e) => { if (e.key === "Enter") runAnalysis(); }} placeholder="분석할 키워드 입력" className="min-w-0 flex-1 rounded-xl border border-[#EAE6E8] px-4 py-3 text-sm outline-none focus:border-[#9B82AC]" />
               <button onClick={runAnalysis} disabled={!keyword.trim()} className="rounded-xl bg-[#665174] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40">분석 실행</button>
             </div>
           </div>
@@ -134,6 +159,8 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
                 title="추천 키워드"
                 description="입력한 키워드와 글쓰기 주제를 구체화할 수 있는 확장 후보입니다."
                 rows={rows.recommended}
+                documentCounts={documentCounts}
+                loadingCounts={loadingCounts}
                 selectedKeyword={selectedKeyword}
                 onSelect={setSelectedKeyword}
               />
@@ -142,9 +169,13 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
                 title="연관 키워드"
                 description="검색 의도를 세분화해 함께 검토할 수 있는 연관 표현입니다."
                 rows={rows.related}
+                documentCounts={documentCounts}
+                loadingCounts={loadingCounts}
                 selectedKeyword={selectedKeyword}
                 onSelect={setSelectedKeyword}
               />
+
+              {apiError && <p role="status" className="rounded-xl bg-[#FFF7F1] px-4 py-3 text-xs text-[#956B4B]">{apiError}</p>}
 
               <div className="sticky bottom-20 z-10 rounded-2xl border border-[#E5DCE9] bg-white p-4 shadow-lg md:bottom-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -172,10 +203,12 @@ export default function CompetitorAnalysis({ onSelectKeyword, initialKeyword = "
   );
 }
 
-function KeywordSection({ title, description, rows, selectedKeyword, onSelect }: {
+function KeywordSection({ title, description, rows, documentCounts, loadingCounts, selectedKeyword, onSelect }: {
   title: string;
   description: string;
   rows: { word: string; kind: string }[];
+  documentCounts: Record<string, number | null>;
+  loadingCounts: boolean;
   selectedKeyword: string;
   onSelect: (keyword: string) => void;
 }) {
@@ -211,8 +244,8 @@ function KeywordSection({ title, description, rows, selectedKeyword, onSelect }:
                   <span className="font-medium text-[#51445A]">{row.word}</span>
                   <span className="mt-1 block text-[9px] text-[#806B8E] sm:inline sm:ml-2 sm:mt-0">{row.kind}</span>
                 </td>
-                <td className="break-words px-1.5 py-3 text-[#A49AA9] sm:px-3">연동 후 제공</td>
-                <td className="break-words px-1.5 py-3 text-[#A49AA9] sm:px-3">연동 후 제공</td>
+                <td className="break-words px-1.5 py-3 text-[#A49AA9] sm:px-3">별도 데이터 필요</td>
+                <td className="break-words px-1.5 py-3 text-[#665174] sm:px-3">{loadingCounts ? "조회 중…" : documentCounts[row.word] === null ? "조회 실패" : documentCounts[row.word] === undefined ? "—" : documentCounts[row.word].toLocaleString("ko-KR")}</td>
               </tr>
             ))}
           </tbody>
