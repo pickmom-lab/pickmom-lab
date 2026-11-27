@@ -61,6 +61,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
   const [generationError, setGenerationError] = useState("");
   const [externalStatus, setExternalStatus] = useState("");
   const [externalPrompt, setExternalPrompt] = useState("");
+  const [revisionRequest, setRevisionRequest] = useState("내가 제공한 경험과 세부사항은 빠뜨리지 말고, 자연스러운 했어요체로 다듬어 주세요. 도입부는 짧게, 소제목은 검색 의도에 맞게 정리하고 반복 표현은 줄여 주세요. 새로운 사실이나 경험은 추가하지 마세요.");
   useEffect(() => {
     if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(initialCategory || detect(initialKeyword)); setPurpose(initialPurpose === "비교·분석" ? "비교" : initialPurpose === "문제 해결" ? "문제 해결" : initialPurpose === "경험 리뷰" || initialPurpose === "직접 경험·방문 후기" ? "실사용 후기" : "정보"); setResearchPlan(initialNotes); setNotes(""); }
   }, [initialKeyword, initialCategory, initialPurpose, initialNotes, initialData]);
@@ -159,6 +160,35 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
       setExternalStatus("내용이 길어 직접 복사가 필요해요. 아래 프롬프트를 복사해 ChatGPT에 붙여넣어 주세요.");
     }
   };
+  const reviseWithChatGPT = async () => {
+    if (!draft.trim()) { setExternalStatus("먼저 초안을 작성해 주세요."); return; }
+    const prompt = [
+      "당신은 네이버 블로그 전문 편집자입니다. 아래 초안을 새로 지어내지 말고 편집해 주세요.",
+      "사용자가 제공한 경험·사실·수치·고유한 표현을 삭제하거나 바꾸지 마세요. 근거 없는 사실, 방문 경험, 가격, 주소, 운영시간을 추가하지 마세요. 확인이 필요한 부분은 [직접 확인 필요]로 표시하세요.",
+      "자연스러운 한국어 했어요체를 사용하고, 기계적인 문장과 불필요한 서론·결론 반복을 줄이세요. 검색 키워드는 자연스럽게 유지하고 제목과 소제목을 읽기 쉽게 다듬으세요.",
+      `이번 수정 요청: ${revisionRequest.trim() || "문장 흐름과 가독성을 자연스럽게 다듬어 주세요."}`,
+      `키워드: ${keyword}`,
+      `콘텐츠 유형: ${purpose}`,
+      `현재 제목: ${title}`,
+      `현재 초안:\\n${draft}`,
+      "출력은 수정한 제목과 전체 본문만 제공해 주세요."
+    ].join("\\n\\n");
+    setExternalStatus("");
+    setExternalPrompt("");
+    if (prompt.length <= 5500) {
+      window.open(`https://chatgpt.com/?q=${encodeURIComponent(prompt)}`, "_blank", "noopener,noreferrer");
+      setExternalStatus("ChatGPT에 수정 요청을 전달했어요. 결과를 확인한 뒤 수정된 원고를 이 화면에 붙여넣어 주세요.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(prompt);
+      window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
+      setExternalStatus("수정 요청이 길어 복사했어요. 열린 ChatGPT에 붙여넣어 주세요.");
+    } catch {
+      setExternalPrompt(prompt);
+      setExternalStatus("수정 요청을 복사할 수 없어요. 아래 내용을 복사해 ChatGPT에 붙여넣어 주세요.");
+    }
+  };
   const generateWithGemini = async () => {
     if (!keyword.trim() || !notes.trim()) { setGenerationError("핵심 키워드와 경험·자료를 먼저 입력해 주세요."); return; }
     setGenerating(true); setGenerationError(""); setExternalStatus("");
@@ -233,6 +263,14 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
       <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">통합 원고 편집기</h3><p className="mt-1 text-xs text-[#918995]">AI가 생성한 초안을 제목과 본문 한 화면에서 직접 수정합니다.</p></div><button onClick={()=>setStep(2)} className="text-xs text-[#665174]">← 입력 수정</button></div>
       <div className="mt-4"><p className="mb-1 text-xs font-semibold">제목 구성 예시</p><p className="mb-2 text-[10px] text-[#A49AA9]">키워드와 글 유형을 바탕으로 만든 문장 예시입니다. AI 조사·분석 결과는 아닙니다.</p><div className="space-y-2">{titleIdeas.map((x,i)=><button key={x} onClick={()=>setTitle(x)} className={`block w-full rounded-lg border p-3 text-left text-xs leading-5 ${title===x?"border-[#8D789C] bg-[#F7F3F9]":"border-[#ECE8EA]"}`}>{i+1}. {x}</button>)}</div><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="직접 제목 입력" className="mt-3 w-full rounded-xl border p-3 text-sm"/></div>
       <label className="mt-4 block text-xs font-semibold">본문<textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={20} placeholder="AI가 생성한 초안을 검토하고, 사실관계와 표현을 직접 수정하세요." className="mt-2 w-full rounded-xl border p-4 text-sm leading-7 font-normal"/></label>
+      <div className="mt-4 rounded-xl border border-[#E5DCEB] bg-[#FAF8FB] p-4">
+        <p className="text-xs font-semibold text-[#665174]">초안 다듬기</p>
+        <p className="mt-1 text-[11px] leading-5 text-[#817787]">수정하고 싶은 점만 적으면 현재 원고를 유지하면서 ChatGPT에 편집을 요청합니다.</p>
+        <textarea value={revisionRequest} onChange={e=>setRevisionRequest(e.target.value)} rows={3} className="mt-3 w-full rounded-lg border bg-white p-3 text-xs leading-5"/>
+        <button type="button" onClick={()=>void reviseWithChatGPT()} className="mt-2 rounded-lg bg-[#665174] px-4 py-2.5 text-xs font-semibold text-white">ChatGPT로 원고 다듬기</button>
+        {externalStatus && <p role="status" className="mt-2 rounded-lg bg-white p-3 text-xs leading-5 text-[#665174]">{externalStatus}</p>}
+        {externalPrompt && <textarea readOnly value={externalPrompt} rows={6} className="mt-2 w-full rounded-lg border bg-white p-3 text-xs leading-5" onFocus={e=>e.currentTarget.select()}/>}
+      </div>
       <div className="mt-4 rounded-xl bg-[#F8F5F9] p-4"><p className="text-xs font-semibold text-[#665174]">발행 전 직접 확인할 항목</p><ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-[#817787]"><li>핵심 키워드와 검색 의도에 답하고 있는가</li><li>주소·가격·영업시간 등 변동 정보의 출처와 확인일을 표시했는가</li><li>실제 경험과 외부에서 확인한 사실을 구분했는가</li><li>연관 표현이 자연스럽고 반복이 과도하지 않은가</li><li>사진 설명과 문단 구성이 독자의 이해를 돕는가</li></ul></div>
       <label className="mt-4 block text-xs text-[#817787]">발행 예정일<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-2 w-full rounded-xl border p-3 text-sm"/></label>
       <div className="mt-5 flex flex-wrap gap-2"><button onClick={()=>save("원고 작성")} className="rounded-xl border px-4 py-3 text-sm">임시 저장</button><button onClick={()=>save("발행 준비")} className="rounded-xl bg-[#665174] px-4 py-3 text-sm text-white">발행 준비 저장</button><button onClick={()=>navigator.clipboard?.writeText(draft)} className="rounded-xl border px-4 py-3 text-sm">본문 복사</button><a href="https://blog.naver.com/" target="_blank" rel="noreferrer" className="rounded-xl border px-4 py-3 text-sm">네이버 블로그 열기</a></div>
