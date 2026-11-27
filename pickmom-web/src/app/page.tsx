@@ -1,764 +1,363 @@
-
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CompetitorAnalysis from "./components/competitor-analysis";
+import PopularPostTemplates from "./components/popular-post-templates";
 
-const menus = [
-  { name: "Home", icon: "⌂" },
-  { name: "새 글 만들기", icon: "✎" },
-  { name: "시즌 상품 추천", icon: "◇" },
-  { name: "릴스 · 클립 만들기", icon: "▷" },
-  { name: "템플릿 관리", icon: "▤" },
-  { name: "키워드 발굴", icon: "⌕" },
+type Category = "리빙·제품" | "맛집·카페" | "여행·체험" | "교육 정보" | "부동산·주거" | "생활·정책";
+type Purpose = "경험 리뷰" | "비교·분석" | "정보 제공" | "문제 해결" | "추천·판매";
+type Status = "아이디어" | "키워드 선정" | "자료 조사" | "원고 작성" | "발행 준비" | "발행 완료";
+type Post = {
+  id: number;
+  title: string;
+  keyword: string;
+  category: Category;
+  purpose: Purpose;
+  date: string;
+  status: Status;
+  draft: string;
+  url?: string;
+  photos?: string[];
+};
+type DraftInput = {
+  topic: string;
+  keyword: string;
+  category: Category;
+  purpose: Purpose;
+  notes: string;
+  research: string;
+};
+
+const categories: Category[] = ["리빙·제품", "맛집·카페", "여행·체험", "교육 정보", "부동산·주거", "생활·정책"];
+const purposes: Purpose[] = ["경험 리뷰", "비교·분석", "정보 제공", "문제 해결", "추천·판매"];
+const statuses: Status[] = ["아이디어", "키워드 선정", "자료 조사", "원고 작성", "발행 준비", "발행 완료"];
+const ideas = [
+  { category: "리빙·제품" as Category, title: "겨울철 집안 정리, 자주 쓰는 물건부터 바꾸기", keyword: "겨울 집 정리", purpose: "문제 해결" as Purpose, why: "계절 변화와 생활 불편을 연결한 실용형 주제" },
+  { category: "리빙·제품" as Category, title: "매일 쓰는 주방 수납용품, 구매 전 확인할 기준", keyword: "주방 수납용품 추천", purpose: "비교·분석" as Purpose, why: "구매 전 비교 기준을 제시하기 좋은 주제" },
+  { category: "맛집·카페" as Category, title: "아이와 함께 방문한 식당, 방문 전 확인할 것", keyword: "아이와 가기 좋은 식당", purpose: "경험 리뷰" as Purpose, why: "주차·좌석·메뉴 등 실제 경험을 담기 좋은 주제" },
+  { category: "여행·체험" as Category, title: "추운 날 아이와 가기 좋은 실내 체험 정리", keyword: "겨울 아이 실내 체험", purpose: "정보 제공" as Purpose, why: "시즌성과 지역 정보를 결합할 수 있는 주제" },
+  { category: "교육 정보" as Category, title: "초등 입학 전 준비, 지금 확인할 생활 습관", keyword: "초등 입학 전 준비", purpose: "정보 제공" as Purpose, why: "학부모의 구체적인 준비 질문에 답하는 주제" },
+  { category: "생활·정책" as Category, title: "연말에 놓치기 쉬운 생활 지원·신청 일정 확인", keyword: "연말 생활 지원 정보", purpose: "정보 제공" as Purpose, why: "공식 일정과 신청 조건 확인이 핵심인 주제" },
+  { category: "부동산·주거" as Category, title: "이사 전 체크해야 할 관리비와 주거 비용 항목", keyword: "이사 전 주거 비용", purpose: "문제 해결" as Purpose, why: "실제 의사결정에 필요한 체크리스트형 주제" },
 ];
 
-const topics = [
-  {
-    id: 1, category: "여행", title: "2026 서울 크리스마스 마켓 총정리",
-    keyword: "서울 크리스마스 마켓", trend: "시즌성", competition: "보통",
-    intent: "일정, 위치, 주차, 예약 방법",
-    opportunity: "마켓별 운영 기간과 실제 방문 동선을 비교하면 차별화할 수 있어요.",
-    questions: ["서울 크리스마스 마켓은 어디에서 열릴까?", "아이와 방문하기 좋은 곳은?", "예약이 필요한 곳은 어디일까?"],
-    outline: ["2026년 서울 크리스마스 마켓 일정", "장소별 특징과 볼거리", "아이와 방문할 때 알아둘 점", "교통 및 주차 정보"],
-  },
-  {
-    id: 2, category: "교육·육아", title: "초등 입학 전 수학, 어디까지 해야 할까?",
-    keyword: "7세 수학 로드맵", trend: "꾸준함", competition: "높음",
-    intent: "학습 수준, 교재, 학원 선택",
-    opportunity: "아이의 현재 수준별로 실제 학습 단계를 정리하면 유용해요.",
-    questions: ["초등 입학 전 연산은 어디까지 해야 할까?", "사고력 수학은 언제 시작할까?", "교재와 학원은 어떻게 선택할까?"],
-    outline: ["입학 전 수학에서 중요한 기초", "연산과 사고력의 균형", "아이 수준별 학습 방향", "교재와 학원 선택 기준"],
-  },
-  {
-    id: 3, category: "맛집", title: "아이와 가기 좋은 서울 브런치 맛집",
-    keyword: "서울 아이와 브런치", trend: "상승", competition: "높음",
-    intent: "위치, 메뉴, 주차, 아이 동반",
-    opportunity: "아이 의자, 주차, 메뉴 구성 등 실제 방문 정보를 구체적으로 비교해요.",
-    questions: ["아이와 방문하기 편할까?", "주차가 가능할까?", "아이 메뉴가 있을까?"],
-    outline: ["매장 위치와 분위기", "메뉴와 가격", "아이와 방문하기 좋은 점", "주차 및 이용 팁"],
-  },
-  {
-    id: 4, category: "쇼핑", title: "겨울철 아이 실내 놀이 아이템 추천",
-    keyword: "겨울 실내 놀이", trend: "시즌성", competition: "보통",
-    intent: "가격, 사용 후기, 연령",
-    opportunity: "연령별 놀이 방식과 실제 사용 후기를 중심으로 구성해요.",
-    questions: ["집에서 오래 가지고 놀 수 있을까?", "몇 살부터 사용할 수 있을까?", "공간을 많이 차지할까?"],
-    outline: ["겨울철 실내 놀이 선택 기준", "연령별 추천 아이템", "가격과 활용도 비교", "구매 전 확인할 점"],
-  },
-  {
-    id: 5, category: "책", title: "초등 저학년 추천 과학 그림책",
-    keyword: "초등 과학 그림책", trend: "꾸준함", competition: "낮음",
-    intent: "도서 추천, 연령, 독서",
-    opportunity: "주제별 책 목록과 독후 활동을 함께 제안할 수 있어요.",
-    questions: ["과학을 처음 접하는 아이에게 어떤 책이 좋을까?", "몇 학년부터 읽으면 좋을까?", "독후 활동은 어떻게 할까?"],
-    outline: ["과학 그림책 선택 기준", "주제별 추천 도서", "아이 반응과 읽는 방법", "함께 해볼 독후 활동"],
-  },
-  {
-    id: 6, category: "교육·육아", title: "영어유치원 졸업 후 영어 공부 방향",
-    keyword: "영어유치원 이후 영어", trend: "꾸준함", competition: "높음",
-    intent: "학습 방법, 교재, 교육 방향",
-    opportunity: "유치원 이후 읽기·쓰기·말하기의 균형을 현실적으로 정리해요.",
-    questions: ["영어유치원 이후 무엇을 이어가야 할까?", "리딩과 라이팅은 어떻게 관리할까?", "학원은 계속 다녀야 할까?"],
-    outline: ["영어유치원 이후 달라지는 환경", "영역별 학습 방향", "가정에서 할 수 있는 활동", "학원과 교재 선택 기준"],
-  },
-];
+const statusClass: Record<Status, string> = {
+  "아이디어": "bg-stone-100 text-stone-600",
+  "키워드 선정": "bg-violet-50 text-violet-700",
+  "자료 조사": "bg-sky-50 text-sky-700",
+  "원고 작성": "bg-amber-50 text-amber-700",
+  "발행 준비": "bg-orange-50 text-orange-700",
+  "발행 완료": "bg-emerald-50 text-emerald-700",
+};
 
-const products = [
-  { id: 1, category: "교육·놀이", name: "자석 블록·구성 놀이", season: "실내 놀이", reason: "겨울철 실내 활동 콘텐츠", price: "가격 조사 필요" },
-  { id: 2, category: "키즈 라이프", name: "겨울 아동 실내복", season: "겨울 시즌", reason: "계절 상품 비교 및 착용 후기", price: "가격 조사 필요" },
-  { id: 3, category: "교육·교재", name: "초등 입학 준비 교재", season: "입학 시즌", reason: "연령별 학습 준비 콘텐츠", price: "가격 조사 필요" },
-  { id: 4, category: "엄마 라이프", name: "주방 정리·수납 아이템", season: "상시 관심", reason: "실사용 중심 추천 콘텐츠", price: "가격 조사 필요" },
-];
+function mondayOf(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+function dateKey(date: Date) {
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+}
+function makeDraft(input: DraftInput, angle: string) {
+  const topic = input.topic.trim() || input.keyword.trim() || "이번 주 기록";
+  const keyword = input.keyword.trim() || topic;
+  const personal = input.notes.trim() || "직접 경험한 내용과 확인한 사실을 이 부분에 구체적으로 정리해 주세요.";
+  const facts = input.research.trim() || "가격·운영시간·주소·이용 조건 등 변동될 수 있는 정보는 발행 전에 공식 자료로 확인해 주세요.";
+  return `# ${topic}
 
-const categories = ["전체", "여행", "맛집", "교육·육아", "쇼핑", "책"];
+${keyword}를 찾는 분들이 실제로 궁금해할 내용을 중심으로 정리해 봤어요. 이번 글은 ${angle} 방향으로 구성합니다.
+
+## 먼저 정리하는 핵심 내용
+이 글에서 다룰 내용과 확인해야 할 기준을 간단히 소개해 주세요. 독자가 이 글을 읽고 무엇을 알 수 있는지 첫 부분에서 분명하게 전달합니다.
+
+## 직접 경험하거나 확인한 내용
+${personal}
+
+## 알아두면 좋은 정보
+${facts}
+
+## 선택할 때 살펴볼 점
+- 내 상황과 사용 목적에 맞는지 확인하기
+- 가격과 조건은 작성 시점 기준으로 다시 확인하기
+- 장점뿐 아니라 아쉬운 점과 주의할 점도 함께 비교하기
+
+## 마무리
+${keyword}를 알아보는 분들에게 도움이 되도록 핵심 내용을 정리했어요. 실제 경험과 확인된 정보를 구분해 참고해 주세요.
+
+---
+※ 이 초안은 입력한 메모를 바탕으로 만든 편집용 구조입니다. 확인되지 않은 정보나 경험을 사실처럼 추가하지 않았으며, 발행 전 사실 확인과 문장 보완이 필요합니다.`;
+}
 
 export default function Home() {
-  const [activeMenu, setActiveMenu] = useState("Home");
-  const [view, setView] = useState("home");
-  const [selectedTopic, setSelectedTopic] = useState<(typeof topics)[number] | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<(typeof products)[number] | null>(null);
-  const [category, setCategory] = useState("전체");
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [page, setPage] = useState<"home" | "keywords" | "templates" | "writing" | "calendar">("home");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [showIdeas, setShowIdeas] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState<number | null>(null);
+  const [draftInput, setDraftInput] = useState<DraftInput>({
+    topic: "", keyword: "", category: "리빙·제품", purpose: "경험 리뷰", notes: "", research: "",
+  });
+  const [angle, setAngle] = useState("");
+  const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [writingStep, setWritingStep] = useState<1 | 2 | 3>(1);
+  const [photos, setPhotos] = useState<string[]>([]);
+  // Use deterministic initial values during prerender; set the real date after mount.
+  const [today, setToday] = useState(() => new Date(2000, 0, 1));
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(2000, 0, 1));
+  const [scheduleDate, setScheduleDate] = useState("2000-01-01");
 
-  const [writingTitle, setWritingTitle] = useState("");
-  const [writingStep, setWritingStep] = useState(1);
-  const [writingType, setWritingType] = useState("실제 경험 후기");
-  const [writingKeyword, setWritingKeyword] = useState("");
-  const [writingNotes, setWritingNotes] = useState("");
-  const [writingFiles, setWritingFiles] = useState<string[]>([]);
+  useEffect(() => {
+    const now = new Date();
+    setToday(now);
+    setCalendarMonth(now);
+    setScheduleDate(dateKey(now));
+    try {
+      const raw = window.localStorage.getItem("pickmom-blog-posts-v2");
+      if (raw) setPosts(JSON.parse(raw) as Post[]);
+    } catch {
+      // Ignore invalid local data and keep the workspace usable.
+    }
+    setLoaded(true);
+  }, []);
 
-  const filteredTopics = category === "전체"
-    ? topics
-    : topics.filter((topic) => topic.category === category);
+  useEffect(() => {
+    if (loaded) window.localStorage.setItem("pickmom-blog-posts-v2", JSON.stringify(posts));
+  }, [posts, loaded]);
 
-  const goMenu = (name: string) => {
-    setActiveMenu(name);
-    setView(
-      name === "Home"
-        ? "home"
-        : name === "시즌 상품 추천"
-          ? "products"
-           : name === "새 글 만들기"
-            ? "writing"
-            : name === "키워드 발굴"
-              ? "competitor"
-              : "placeholder"
-    );
-    setMoreOpen(false);
+  const weekStart = mondayOf(today);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const thisWeekPosts = posts.filter((post) => {
+    const d = new Date(post.date + "T00:00:00");
+    return d >= weekStart && d <= weekEnd;
+  });
+  const publishedCount = thisWeekPosts.filter((post) => post.status === "발행 완료").length;
+  const progress = Math.min(100, Math.round((publishedCount / 5) * 100));
+
+  const monthDays = useMemo(() => {
+    const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const start = mondayOf(first);
+    return Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d;
+    });
+  }, [calendarMonth]);
+
+  const navigate = (next: typeof page) => setPage(next);
+  const inferCategory = (value: string): Category => {
+    const text = value.toLowerCase();
+    if (/맛집|식당|카페|디저트|빵|케이크|쿠키|국수|고기|음식/.test(text)) return "맛집·카페";
+    if (/여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(text)) return "여행·체험";
+    if (/영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(text)) return "교육 정보";
+    if (/부동산|아파트|전세|월세|청약|이사|주거/.test(text)) return "부동산·주거";
+    if (/지원금|정책|신청|정부|할인|혜택|노동절|공휴일/.test(text)) return "생활·정책";
+    return "리빙·제품";
   };
-
-  const goTopicDetail = (topic: (typeof topics)[number]) => {
-    setSelectedTopic(topic);
-    setView("topicDetail");
-  };
-
-  const startWriting = (title: string) => {
-    setWritingTitle(title);
+  const startWriting = (topic = "", keyword = "", category?: Category, purpose?: Purpose) => {
+    const detectedCategory = category || inferCategory(keyword || topic);
+    const detectedPurpose = purpose || (detectedCategory === "맛집·카페" || detectedCategory === "여행·체험" ? "경험 리뷰" : "정보 제공");
+    setDraftInput({ topic, keyword, category: detectedCategory, purpose: detectedPurpose, notes: "", research: "" });
+    setScheduleDate(dateKey(new Date()));
+    setAngle("");
+    setDraft("");
+    setPhotos([]);
     setWritingStep(1);
-    setWritingType("실제 경험 후기");
-    setWritingKeyword("");
-    setWritingNotes("");
-    setWritingFiles([]);
-    setActiveMenu("새 글 만들기");
-    setView("writing");
+    setEditingId(null);
+    setPage("writing");
+  };
+  const savePost = (status: Status = "원고 작성") => {
+    const title = draftInput.topic.trim() || draftInput.keyword.trim() || "제목 미정";
+    if (editingId) {
+      setPosts((old) => old.map((p) => p.id === editingId ? { ...p, title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: scheduleDate, draft, photos, status } : p));
+    } else {
+      setPosts((old) => [{ id: Date.now(), title, keyword: draftInput.keyword, category: draftInput.category, purpose: draftInput.purpose, date: scheduleDate, status, draft, photos }, ...old]);
+    }
+    setPage("calendar");
+  };
+  const editPost = (post: Post) => {
+    setEditingId(post.id);
+    setDraftInput({ topic: post.title, keyword: post.keyword, category: post.category, purpose: post.purpose, notes: "", research: "" });
+    setScheduleDate(post.date || dateKey(new Date()));
+    setDraft(post.draft);
+    setPhotos(post.photos || []);
+    setAngle(post.purpose === "비교·분석" ? "비교 중심" : post.purpose === "정보 제공" ? "정보 중심" : post.purpose === "문제 해결" ? "문제 해결 중심" : "경험 중심");
+    setWritingStep(post.draft ? 3 : 2);
+    setPage("writing");
+  };
+  const updatePost = (id: number, patch: Partial<Post>) => setPosts((old) => old.map((p) => p.id === id ? { ...p, ...patch } : p));
+  const addIdeaToCalendar = (idea: typeof ideas[number]) => {
+    setPosts((old) => [{ id: Date.now(), title: idea.title, keyword: idea.keyword, category: idea.category, purpose: idea.purpose, date: dateKey(new Date()), status: "아이디어", draft: "" }, ...old]);
+    setSelectedIdea(null);
   };
 
-  const backToTopics = () => {
-    setSelectedTopic(null);
-    setView("topics");
-  };
+  const navItems = [
+    { id: "home" as const, label: "홈", icon: "⌂" },
+    { id: "keywords" as const, label: "키워드 연구소", icon: "⌕" },
+    { id: "templates" as const, label: "인기글 분석·템플릿", icon: "▤" },
+    { id: "writing" as const, label: "블로그 글쓰기", icon: "✎" },
+    { id: "calendar" as const, label: "콘텐츠 캘린더", icon: "▦" },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#F8F7F5] text-[#29252D]">
-      <div className="flex min-h-screen">
-
-        {/* PC 사이드바 */}
-        <aside className="hidden w-[245px] shrink-0 border-r border-[#EAE6E8] bg-white px-6 py-8 md:flex md:flex-col">
-          <button onClick={() => goMenu("Home")} className="mb-12 text-left">
+    <div className="min-h-screen bg-[#F7F6F4] text-[#29252D]">
+      <div className="mx-auto flex min-h-screen max-w-[1600px]">
+        <aside className="hidden w-[250px] shrink-0 border-r border-[#EAE6E8] bg-white px-6 py-8 md:flex md:flex-col">
+          <button onClick={() => navigate("home")} className="mb-12 text-left">
             <div className="text-[23px] font-bold tracking-tight text-[#5B456D]">PICKMOM LAB</div>
-            <div className="mt-2 text-xs tracking-widest text-[#A49AA9]">MOM&apos;S CONTENT WORKSPACE</div>
+            <div className="mt-2 text-[10px] tracking-[0.18em] text-[#A49AA9]">BLOG CONTENT WORKSPACE</div>
           </button>
-
-          <div className="mb-4 text-[11px] font-semibold tracking-widest text-[#A49AA9]">WORKSPACE</div>
+          <p className="mb-3 text-[10px] font-semibold tracking-[0.18em] text-[#A49AA9]">BLOG WORKSPACE</p>
           <nav className="flex flex-col gap-2">
-            {menus.map((menu) => (
-              <button
-                key={menu.name}
-                onClick={() => goMenu(menu.name)}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm ${
-                  activeMenu === menu.name
-                    ? "bg-[#F0EAF4] font-semibold text-[#634B78]"
-                    : "text-[#77717B] hover:bg-[#F8F6F8]"
-                }`}
-              >
-                <span className="text-lg">{menu.icon}</span>
-                {menu.name}
+            {navItems.map((item) => (
+              <button key={item.id} onClick={() => navigate(item.id)} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition ${page === item.id ? "bg-[#F0EAF4] font-semibold text-[#634B78]" : "text-[#77717B] hover:bg-[#F8F6F8]"}`}>
+                <span className="text-lg">{item.icon}</span>{item.label}
               </button>
             ))}
           </nav>
-
           <div className="mt-auto rounded-2xl bg-[#F8F5F9] p-4">
-            <div className="text-sm font-semibold text-[#634B78]">PICKMOM&apos;S NOTE</div>
-            <p className="mt-2 text-xs leading-6 text-[#817787]">
-              엄마의 선택이 조금 더 쉬워지도록.<br />
-              찾고, 비교하고, 기록해요.
-            </p>
+            <div className="text-sm font-semibold text-[#634B78]">이번 주 목표</div>
+            <div className="mt-2 text-2xl font-semibold text-[#5B456D]">{publishedCount}<span className="text-sm font-normal text-[#A49AA9]"> / 5편</span></div>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E9E2ED]"><div className="h-full rounded-full bg-[#80678F]" style={{ width: progress + "%" }} /></div>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 px-4 py-6 pb-28 sm:px-6 md:px-10 md:py-10 md:pb-10">
-
-          {/* 헤더 */}
-          <header className="mb-7">
-            <div className="text-xl font-bold text-[#5B456D] md:hidden">PICKMOM LAB</div>
-            <div className="mt-3 flex items-center justify-between md:mt-0">
-              <div>
-                <h1 className="text-xl font-semibold md:text-2xl">
-                  {view === "home" ? "Home"
-                    : view === "topics" ? "인기 주제 전체보기"
-                    : view === "topicDetail" ? "주제 상세 분석"
-                    : view === "products" ? "인기 상품 전체보기"
-                    : view === "productDetail" ? "상품 상세"
-                    : view === "competitor" ? "키워드 발굴"
-                    : activeMenu}
-                </h1>
-                <p className="mt-2 text-xs text-[#918995] sm:text-sm">
-                  {view === "home"
-                    ? "오늘의 트렌드와 콘텐츠 아이디어를 발견해 보세요."
-                    : "PICKMOM LAB 콘텐츠 작업 공간"}
-                </p>
-              </div>
-              {view !== "home" && (
-                <button
-                  onClick={() => goMenu("Home")}
-                  className="rounded-full border border-[#EAE6E8] bg-white px-4 py-2 text-xs text-[#817787]"
-                >
-                  Home으로
-                </button>
-              )}
+        <main className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 md:px-10 md:py-9 md:pb-10">
+          <header className="mb-7 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-lg font-bold text-[#5B456D] md:hidden">PICKMOM LAB</div>
+              <h1 className="mt-2 text-xl font-semibold md:mt-0 md:text-2xl">{navItems.find((n) => n.id === page)?.label}</h1>
+              <p className="mt-1 text-xs text-[#918995] sm:text-sm">블로그를 꾸준히 발행하고, 콘텐츠 성과를 쌓는 작업 공간</p>
             </div>
+            <button onClick={() => startWriting()} className="shrink-0 rounded-full bg-[#665174] px-4 py-2.5 text-xs font-semibold text-white shadow-sm">+ 새 글</button>
           </header>
 
-          {/* HOME */}
-          {view === "home" && (
+          {page === "home" && (
             <>
-              <section className="mb-8 rounded-3xl bg-[#665174] px-6 py-7 text-white md:px-9 md:py-9">
-                <div className="text-xs tracking-widest text-[#E0D5E8]">YOUR CONTENT, YOUR WAY</div>
-                <h2 className="mt-4 text-2xl font-semibold leading-snug md:text-3xl">
-                  오늘은 어떤 이야기를<br />기록해 볼까요?
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-[#E6DDEB]">
-                  트렌드를 발견하고, 나만의 경험을 더해<br className="hidden sm:block" />
-                  오래 읽히는 콘텐츠를 만들어 보세요.
-                </p>
-                <button
-                  onClick={() => startWriting("")}
-                  className="mt-6 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#665174]"
-                >
-                  새 글 시작하기 →
-                </button>
+              <section className="mb-6 rounded-3xl bg-[#665174] px-6 py-7 text-white md:px-9 md:py-9">
+                <p className="text-[10px] tracking-[0.2em] text-[#E0D5E8]">PICKMOM BLOG STUDIO</p>
+                <h2 className="mt-3 text-2xl font-semibold leading-snug md:text-3xl">이번 주 블로그,<br className="sm:hidden" /> 5편을 차근차근.</h2>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-[#E6DDEB]">주제를 고르고, 내 경험을 더하고, 발행까지 관리해요. 지금은 블로그 운영에 필요한 기능에 집중합니다.</p>
+                <button onClick={() => navigate("writing")} className="mt-5 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#665174]">블로그 글 작성하기 →</button>
               </section>
 
-              <section className="mb-10">
-                <div className="mb-5 flex items-end justify-between gap-2">
-                  <div>
-                    <h2 className="text-lg font-semibold">이번 주 인기 주제</h2>
-                    <p className="mt-1 text-xs text-[#A49AA9]">콘텐츠로 만들 만한 아이디어</p>
-                  </div>
-                  <button onClick={() => setView("topics")} className="text-xs font-semibold text-[#715B80]">
-                    전체보기 →
-                  </button>
-                </div>
-                <div className="flex flex-col gap-3">
-                  {topics.slice(0, 3).map((topic) => (
-                    <button
-                      key={topic.id}
-                      onClick={() => goTopicDetail(topic)}
-                      className="rounded-2xl border border-[#ECE8EA] bg-white p-4 text-left transition hover:border-[#CDBFD5]"
-                    >
-                      <div className="mb-2 text-[10px] text-[#8B7898]">{topic.category} · {topic.trend}</div>
-                      <div className="text-sm font-semibold leading-6">{topic.title}</div>
-                      <div className="mt-2 text-xs text-[#918995]">키워드 · {topic.keyword}</div>
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-2 text-[10px] text-[#A49AA9]">※ 현재는 화면 테스트용 샘플 데이터입니다.</p>
+              <section className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5"><p className="text-xs text-[#918995]">이번 주 발행</p><p className="mt-2 text-3xl font-semibold text-[#665174]">{publishedCount}<span className="text-base font-normal text-[#A49AA9]"> / 5</span></p><div className="mt-3 h-1.5 rounded-full bg-[#F0ECF1]"><div className="h-full rounded-full bg-[#80678F]" style={{ width: progress + "%" }} /></div></div>
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5"><p className="text-xs text-[#918995]">작성 중인 글</p><p className="mt-2 text-3xl font-semibold text-[#665174]">{posts.filter((p) => p.status === "원고 작성" || p.status === "자료 조사").length}<span className="text-sm font-normal text-[#A49AA9]"> 편</span></p><p className="mt-2 text-xs text-[#A49AA9]">자료 조사 · 원고 작성 단계</p></div>
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5"><p className="text-xs text-[#918995]">캘린더 등록</p><p className="mt-2 text-3xl font-semibold text-[#665174]">{posts.length}<span className="text-sm font-normal text-[#A49AA9]"> 편</span></p><p className="mt-2 text-xs text-[#A49AA9]">저장된 아이디어와 원고</p></div>
               </section>
 
-              <section>
-                <div className="mb-5 flex items-end justify-between gap-2">
-                  <div>
-                    <h2 className="text-lg font-semibold">이번 주 인기 상품</h2>
-                    <p className="mt-1 text-xs text-[#A49AA9]">콘텐츠와 수익으로 연결할 상품 후보</p>
-                  </div>
-                  <button onClick={() => setView("products")} className="text-xs font-semibold text-[#715B80]">
-                    전체보기 →
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {products.slice(0, 2).map((product) => (
-                    <button
-                      key={product.id}
-                      onClick={() => { setSelectedProduct(product); setView("productDetail"); }}
-                      className="rounded-2xl border border-[#ECE8EA] bg-white p-5 text-left"
-                    >
-                      <div className="mb-3 flex h-20 items-center justify-center rounded-xl bg-[#F5F1F6] text-3xl text-[#8D789C]">◇</div>
-                      <div className="text-[10px] text-[#8B7898]">{product.category} · {product.season}</div>
-                      <h3 className="mt-2 text-sm font-semibold">{product.name}</h3>
-                      <p className="mt-2 text-xs text-[#918995]">{product.reason}</p>
-                    </button>
+              <section className="mb-8">
+                <div className="mb-4 flex items-end justify-between"><div><h2 className="text-lg font-semibold">이번 주 추천 포스팅 5개</h2><p className="mt-1 text-xs text-[#A49AA9]">콘텐츠 분야를 섞어 발행 리듬을 만드는 편집 아이디어</p></div><button onClick={() => setShowIdeas(!showIdeas)} className="text-xs font-semibold text-[#715B80]">{showIdeas ? "접기" : "전체 보기"} →</button></div>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {ideas.slice(0, showIdeas ? ideas.length : 5).map((idea, i) => (
+                    <div key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
+                      <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">IDEA {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
+                      <h3 className="mt-3 text-sm font-semibold leading-6">{idea.title}</h3><p className="mt-2 text-xs text-[#918995]">키워드 제안 · {idea.keyword}</p><p className="mt-3 text-xs leading-5 text-[#817787]">{idea.why}</p>
+                      <div className="mt-4 flex gap-2"><button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose)} className="rounded-lg bg-[#665174] px-3 py-2 text-xs font-semibold text-white">이 주제로 글쓰기</button><button onClick={() => addIdeaToCalendar(idea)} className="rounded-lg border border-[#EAE6E8] px-3 py-2 text-xs text-[#716777]">캘린더에 저장</button></div>
+                    </div>
                   ))}
                 </div>
-                <p className="mt-2 text-[10px] text-[#A49AA9]">※ 실제 판매 순위나 제휴 가능 여부가 확인된 데이터는 아닙니다.</p>
+                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">※ 위 5개는 편집 방향을 보여주는 예시 아이디어이며 실시간 인기 순위나 검색량 데이터가 아닙니다. 실제 검색어/API 연동은 별도 영역으로 유지합니다.</p>
+              </section>
+
+              <section className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
+                <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">최근 작업</h2><button onClick={() => navigate("calendar")} className="text-xs text-[#715B80]">캘린더 보기 →</button></div>
+                {posts.length === 0 ? <p className="py-6 text-center text-sm text-[#A49AA9]">아직 저장한 글이 없어요. 추천 주제로 첫 글을 시작해 보세요.</p> : <div className="space-y-3">{posts.slice(0, 4).map((post) => <button key={post.id} onClick={() => editPost(post)} className="flex w-full items-center justify-between gap-3 border-b border-[#F1EEF0] pb-3 text-left last:border-0 last:pb-0"><span className="min-w-0"><span className="block truncate text-sm font-medium">{post.title}</span><span className="mt-1 block text-[10px] text-[#A49AA9]">{post.category} · {post.date}</span></span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] ${statusClass[post.status]}`}>{post.status}</span></button>)}</div>}
               </section>
             </>
           )}
 
-          {/* 인기 주제 전체보기 */}
-          {view === "topics" && (
+          {page === "keywords" && <section className="rounded-2xl border border-[#ECE8EA] bg-white p-4 sm:p-6"><div className="mb-5"><h2 className="font-semibold">키워드 연구소</h2><p className="mt-1 text-xs leading-5 text-[#918995]">기존 키워드 분석 화면을 유지합니다. 검색 API 연결이나 인증 설정은 이번 화면 개편에서 변경하지 않습니다.</p></div><CompetitorAnalysis onSelectKeyword={(keyword) => startWriting(keyword, keyword)} /></section>}
+
+          {page === "templates" && <PopularPostTemplates />}
+
+          {page === "writing" && (
+            <section className="mx-auto max-w-4xl space-y-5">
+              <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div><p className="text-xs font-semibold text-[#80678F]">BLOG WRITING FLOW</p><h2 className="mt-1 text-lg font-semibold">키워드에서 발행까지</h2></div>
+                  <span className="text-xs text-[#918995]">STEP {writingStep} / 3</span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {(["주제·분류", "경험·자료", "원고·발행"] as const).map((label,i)=><button key={label} onClick={()=>setWritingStep((i+1) as 1|2|3)} className={`rounded-lg px-2 py-2.5 text-xs font-semibold ${writingStep===i+1?"bg-[#665174] text-white":"bg-[#F5F1F6] text-[#80678F]"}`}>{i+1}. {label}</button>)}
+                </div>
+              </div>
+
+              {writingStep === 1 && <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
+                <h3 className="font-semibold">1. 키워드와 콘텐츠 유형 확인</h3>
+                <p className="mt-1 text-xs leading-5 text-[#918995]">키워드를 바탕으로 분야와 글의 목적을 먼저 분류했어요. 필요하면 직접 수정할 수 있습니다.</p>
+                <label className="mt-4 block text-xs text-[#817787]">핵심 키워드<input value={draftInput.keyword} onChange={e=>setDraftInput({...draftInput,keyword:e.target.value,category:inferCategory(e.target.value)})} placeholder="분석한 키워드" className="mt-2 w-full rounded-xl border border-[#EAE6E8] p-3 text-sm"/></label>
+                <label className="mt-4 block text-xs text-[#817787]">콘텐츠 분야<select value={draftInput.category} onChange={e=>setDraftInput({...draftInput,category:e.target.value as Category})} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-white p-3 text-sm">{categories.map(c=><option key={c}>{c}</option>)}</select></label>
+                <label className="mt-4 block text-xs text-[#817787]">글의 목적<select value={draftInput.purpose} onChange={e=>setDraftInput({...draftInput,purpose:e.target.value as Purpose})} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-white p-3 text-sm">{purposes.map(p=><option key={p}>{p}</option>)}</select></label>
+                <label className="mt-4 block text-xs text-[#817787]">글 주제 / 임시 제목<input value={draftInput.topic} onChange={e=>setDraftInput({...draftInput,topic:e.target.value})} placeholder="키워드를 바탕으로 쓸 글의 주제" className="mt-2 w-full rounded-xl border border-[#EAE6E8] p-3 text-sm"/></label>
+                <div className="mt-5 flex justify-end"><button onClick={()=>setWritingStep(2)} disabled={!draftInput.keyword.trim()&&!draftInput.topic.trim()} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">다음: 작성 방식 선택 →</button></div>
+              </div>}
+
+              {writingStep === 2 && <div className="space-y-5">
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
+                  <h3 className="font-semibold">2. 어떤 방식으로 작성할까요?</h3>
+                  <p className="mt-1 text-xs leading-5 text-[#918995]">선택한 목적에 맞춰 입력 항목이 달라집니다. 직접 경험이 없는 정보형 글이라면 확인 가능한 자료 중심으로 작성하세요.</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {purposes.map(p=><button key={p} onClick={()=>setDraftInput({...draftInput,purpose:p})} className={`rounded-xl border p-4 text-left ${draftInput.purpose===p?"border-[#8D789C] bg-[#F7F3F9]":"border-[#ECE8EA]"}`}><span className="text-sm font-semibold">{p}</span><span className="mt-1 block text-xs leading-5 text-[#918995]">{p==="경험 리뷰"?"직접 방문·구매·사용한 과정과 솔직한 평가":p==="비교·분석"?"여러 선택지의 기준·차이·장단점":p==="정보 제공"?"일정·위치·가격·조건 등 확인된 사실":p==="문제 해결"?"독자의 문제와 해결 절차·주의사항":"추천 대상·선택 이유·구매 또는 이용 판단 기준"}</span></button>)}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
+                  <h3 className="font-semibold">3. 내용과 사진 입력</h3>
+                  <p className="mt-1 text-xs text-[#918995]">{draftInput.category} · {draftInput.purpose}에 맞춘 입력 단계입니다.</p>
+                  <label className="mt-4 block text-xs text-[#817787]">{draftInput.purpose==="경험 리뷰"?"직접 경험한 과정과 느낌":draftInput.purpose==="비교·분석"?"비교할 대상과 항목":draftInput.purpose==="정보 제공"?"전달할 핵심 정보와 확인 출처":draftInput.purpose==="문제 해결"?"독자가 겪는 문제와 해결 과정":"추천 대상과 추천·비추천 이유"}
+                    <textarea value={draftInput.notes} onChange={e=>setDraftInput({...draftInput,notes:e.target.value})} rows={7} placeholder={draftInput.category==="맛집·카페"?"방문 시점, 주문 메뉴, 맛과 양, 가격, 대기, 주차, 공간, 좋았던 점과 아쉬운 점을 적어 주세요.":draftInput.category==="여행·체험"?"방문 날짜, 동선, 예약, 이용 요금, 아이 연령별 반응, 편의시설, 주차와 실제 팁을 적어 주세요.":draftInput.category==="교육 정보"?"대상 연령, 교육기관·교재·수업 정보, 아이 반응, 확인한 기준과 출처를 적어 주세요.":"핵심 내용, 실제 상황, 판단 기준, 장단점과 독자에게 필요한 팁을 적어 주세요."} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm leading-6"/></label>
+                  <label className="mt-4 block text-xs text-[#817787]">추가 조사 자료 / 공식 출처 / 참고 링크<textarea value={draftInput.research} onChange={e=>setDraftInput({...draftInput,research:e.target.value})} rows={4} placeholder="가격, 운영시간, 주소, 예약 조건, 제품 사양 등 확인한 자료와 출처를 입력해 주세요." className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm leading-6"/></label>
+                  <div className="mt-4">
+                    <label className="block text-xs font-medium text-[#817787]">사진 첨부</label>
+                    <p className="mt-1 text-[11px] text-[#A49AA9]">직접 촬영한 사진을 여러 장 선택할 수 있어요. 사진은 현재 브라우저에 저장됩니다.</p>
+                    <input type="file" accept="image/*" multiple onChange={e=>{const files=Array.from(e.target.files||[]);files.forEach(file=>{const reader=new FileReader();reader.onload=()=>{if(typeof reader.result==="string")setPhotos(old=>[...old,reader.result as string]);};reader.readAsDataURL(file);});e.currentTarget.value="";}} className="mt-2 block w-full rounded-xl border border-dashed border-[#CFC3D7] bg-[#FCFBFC] p-3 text-xs"/>
+                    {photos.length>0&&<div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">{photos.map((src,i)=><div key={i} className="relative"><img src={src} alt={`첨부 사진 ${i+1}`} className="h-24 w-full rounded-lg object-cover"/><button onClick={()=>setPhotos(old=>old.filter((_,idx)=>idx!==i))} className="absolute right-1 top-1 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">삭제</button></div>)}</div>}
+                  </div>
+                </div>
+                <div className="flex flex-wrap justify-between gap-2"><button onClick={()=>setWritingStep(1)} className="rounded-xl border border-[#EAE6E8] bg-white px-5 py-3 text-sm text-[#716777]">← 이전</button><button onClick={()=>{setAngle(draftInput.purpose==="비교·분석"?"비교 중심":draftInput.purpose==="정보 제공"?"정보 중심":draftInput.purpose==="문제 해결"?"문제 해결 중심":draftInput.purpose==="추천·판매"?"추천 중심":"경험 중심");setDraft(makeDraft(draftInput,draftInput.purpose));setWritingStep(3);}} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white">입력 내용으로 원고 구성 →</button></div>
+              </div>}
+
+              {writingStep === 3 && <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-semibold">4. 원고 확인 및 발행 준비</h3><p className="mt-1 text-xs text-[#918995]">{draftInput.category} · {draftInput.purpose} · 사진 {photos.length}장</p></div><button onClick={()=>setWritingStep(2)} className="rounded-lg border border-[#EAE6E8] px-3 py-2 text-xs text-[#665174]">입력 내용 수정</button></div>
+                <p className="mt-3 rounded-xl bg-[#F8F5F9] p-3 text-xs leading-5 text-[#817787]">초안은 입력한 내용을 정리한 편집용 구조입니다. 확인되지 않은 사실은 직접 검증해 주세요. 현재 네이버 블로그 자동 발행은 연결되어 있지 않습니다.</p>
+                <textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={24} className="mt-4 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-4 text-sm leading-7"/>
+                <label className="mt-4 block text-xs text-[#817787]">예정 발행일<input type="date" value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm"/></label>
+                <div className="mt-5 flex flex-col gap-2 sm:flex-row"><button onClick={()=>savePost("발행 준비")} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white">발행 준비 저장</button><button onClick={()=>savePost("원고 작성")} className="rounded-xl border border-[#EAE6E8] px-5 py-3 text-sm text-[#716777]">임시 원고 저장</button><button onClick={()=>navigator.clipboard?.writeText(draft)} className="rounded-xl border border-[#EAE6E8] px-5 py-3 text-sm text-[#716777]">본문 복사</button></div>
+                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">네이버에 직접 발행한 뒤 캘린더에서 상태를 ‘발행 완료’로 변경할 수 있습니다.</p>
+              </div>}
+            </section>
+          )}
+
+          {page === "calendar" && (
             <section>
-              <div className="mb-5 rounded-2xl bg-[#F0EAF4] p-5">
-                <div className="font-semibold text-[#665174]">콘텐츠 주제 탐색</div>
-                <p className="mt-2 text-xs leading-6 text-[#817787]">
-                  관심 있는 주제를 선택해 검색 의도와 콘텐츠 기회를 자세히 확인해 보세요.
-                </p>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#ECE8EA] bg-white p-4">
+                <div><h2 className="font-semibold">블로그 콘텐츠 캘린더</h2><p className="mt-1 text-xs text-[#918995]">아이디어부터 발행 완료까지 한곳에서 관리해요.</p></div>
+                <div className="flex items-center gap-2"><button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} className="rounded-lg border px-3 py-2 text-sm">‹</button><span className="min-w-24 text-center text-sm font-semibold">{calendarMonth.getFullYear()}.{String(calendarMonth.getMonth() + 1).padStart(2, "0")}</span><button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} className="rounded-lg border px-3 py-2 text-sm">›</button></div>
               </div>
-              <div className="mb-5 flex gap-2 overflow-x-auto pb-2">
-                {categories.map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => setCategory(item)}
-                    className={`shrink-0 rounded-full px-4 py-2 text-xs ${
-                      category === item
-                        ? "bg-[#665174] text-white"
-                        : "border border-[#EAE6E8] bg-white text-[#817787]"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
+              <div className="overflow-hidden rounded-2xl border border-[#ECE8EA] bg-white">
+                <div className="grid grid-cols-7 border-b bg-[#FAF9FA]">{["월", "화", "수", "목", "금", "토", "일"].map((d) => <div key={d} className="py-3 text-center text-xs font-semibold text-[#817787]">{d}</div>)}</div>
+                <div className="grid grid-cols-7">{monthDays.map((day) => {
+                  const key = dateKey(day);
+                  const dayPosts = posts.filter((p) => p.date === key);
+                  const inMonth = day.getMonth() === calendarMonth.getMonth();
+                  return <div key={key} className={`min-h-24 border-b border-r border-[#F1EEF0] p-1.5 sm:min-h-32 sm:p-2 ${inMonth ? "bg-white" : "bg-[#FAF9FA]"}`}><div className={`text-[10px] ${inMonth ? "text-[#716777]" : "text-[#C4BEC7]"}`}>{day.getDate()}</div><div className="mt-1 space-y-1">{dayPosts.map((post) => <button key={post.id} onClick={() => editPost(post)} className="block w-full truncate rounded px-1 py-1 text-left text-[9px] leading-4 sm:text-[10px]" style={{ backgroundColor: post.status === "발행 완료" ? "#EAF5EE" : "#F2EDF5", color: post.status === "발행 완료" ? "#477257" : "#665174" }}>{post.title}</button>)}</div></div>;
+                })}</div>
               </div>
-              <div className="mb-3 text-xs text-[#A49AA9]">
-                총 {filteredTopics.length}개 주제 · 주제를 누르면 상세 분석을 볼 수 있어요.
+              <div className="mt-6 rounded-2xl border border-[#ECE8EA] bg-white p-5"><div className="mb-4 flex items-center justify-between"><h3 className="font-semibold">전체 글 목록</h3><span className="text-xs text-[#A49AA9]">{posts.length}건</span></div>
+                {posts.length === 0 ? <p className="py-6 text-center text-sm text-[#A49AA9]">등록된 콘텐츠가 없습니다.</p> : <div className="space-y-3">{posts.map((post) => <div key={post.id} className="flex flex-col gap-3 border-b border-[#F1EEF0] pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"><button onClick={() => editPost(post)} className="min-w-0 text-left"><span className="block truncate text-sm font-medium">{post.title}</span><span className="mt-1 block text-[10px] text-[#A49AA9]">{post.date} · {post.category} · {post.purpose}</span></button><div className="flex items-center gap-2"><select aria-label="발행 상태" value={post.status} onChange={(e) => updatePost(post.id, { status: e.target.value as Status })} className="rounded-lg border border-[#EAE6E8] bg-white px-2 py-2 text-xs">{statuses.map((s) => <option key={s}>{s}</option>)}</select><button onClick={() => { if (window.confirm("이 콘텐츠를 삭제할까요?")) setPosts((old) => old.filter((p) => p.id !== post.id)); }} className="rounded-lg border border-[#EAE6E8] px-3 py-2 text-xs text-[#A16D79]">삭제</button></div></div>)}</div>}
               </div>
-              <div className="flex flex-col gap-3">
-                {filteredTopics.map((topic, index) => (
-                  <button
-                    key={topic.id}
-                    onClick={() => goTopicDetail(topic)}
-                    className="rounded-2xl border border-[#ECE8EA] bg-white p-5 text-left transition hover:border-[#BBA9C7]"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="mb-2 text-[10px] text-[#8B7898]">
-                          {topic.category} · SAMPLE {String(index + 1).padStart(2, "0")}
-                        </div>
-                        <h3 className="text-sm font-semibold leading-6">{topic.title}</h3>
-                        <p className="mt-2 text-xs text-[#918995]">메인 키워드 · {topic.keyword}</p>
-                      </div>
-                      <span className="text-lg text-[#8D789C]">›</span>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-4 border-t border-[#F1EEF0] pt-3 text-[10px] text-[#89818D]">
-                      <span>트렌드 <b className="text-[#665174]">{topic.trend}</b></span>
-                      <span>경쟁도 <b className="text-[#665174]">{topic.competition}</b></span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">저장한 글과 일정은 현재 사용 중인 브라우저의 로컬 저장소에 보관됩니다. 다른 기기와 자동 동기화되거나 네이버 블로그에 자동 발행되지는 않습니다.</p>
             </section>
           )}
 
-          {/* 주제 상세 분석 */}
-          {view === "topicDetail" && selectedTopic && (
-            <section>
-              <button onClick={backToTopics} className="mb-5 text-xs text-[#715B80]">
-                ← 인기 주제 목록으로
-              </button>
-              <div className="rounded-3xl bg-[#665174] p-6 text-white md:p-8">
-                <div className="text-xs text-[#E0D5E8]">{selectedTopic.category} · 주제 분석</div>
-                <h2 className="mt-3 text-xl font-semibold leading-8 md:text-2xl">{selectedTopic.title}</h2>
-                <p className="mt-3 text-sm text-[#E6DDEB]">메인 키워드 · {selectedTopic.keyword}</p>
-                <button
-                  onClick={() => startWriting(selectedTopic.title)}
-                  className="mt-6 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#665174]"
-                >
-                  이 주제로 글 만들기 →
-                </button>
-              </div>
-
-              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {[
-                  ["트렌드", selectedTopic.trend],
-                  ["경쟁도", selectedTopic.competition],
-                  ["카테고리", selectedTopic.category],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl border border-[#ECE8EA] bg-white p-4">
-                    <div className="text-xs text-[#A49AA9]">{label}</div>
-                    <div className="mt-2 text-sm font-semibold text-[#665174]">{value}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <h3 className="font-semibold">① 사람들이 궁금해하는 질문</h3>
-                <ul className="mt-4 space-y-3 text-sm text-[#716777]">
-                  {selectedTopic.questions.map((q) => <li key={q}>• {q}</li>)}
-                </ul>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <h3 className="font-semibold">② 콘텐츠 기회와 차별화 방향</h3>
-                <p className="mt-3 text-sm leading-7 text-[#716777]">{selectedTopic.opportunity}</p>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <h3 className="font-semibold">③ 추천 콘텐츠 목차</h3>
-                <ol className="mt-4 space-y-3 text-sm text-[#716777]">
-                  {selectedTopic.outline.map((item, i) => <li key={item}>{i + 1}. {item}</li>)}
-                </ol>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <h3 className="font-semibold">④ 검색 의도</h3>
-                <p className="mt-3 text-sm leading-7 text-[#716777]">{selectedTopic.intent}</p>
-              </div>
-
-              <p className="mt-4 text-[10px] leading-5 text-[#A49AA9]">
-                ※ 현재 상세 분석은 화면 구조 확인용 예시입니다. 실제 검색 트렌드·상위 블로그·경쟁 분석은 API와 검색 자료를 연결한 뒤 제공됩니다.
-              </p>
-              <button
-                onClick={() => startWriting(selectedTopic.title)}
-                className="mt-6 w-full rounded-xl bg-[#665174] py-4 text-sm font-semibold text-white"
-              >
-                이 주제로 글 만들기
-              </button>
-            </section>
-          )}
-
-          {/* 상품 전체보기 */}
-          {view === "products" && (
-            <section>
-              <div className="mb-5 rounded-2xl bg-[#F0EAF4] p-5">
-                <h2 className="font-semibold text-[#665174]">상품 발굴 작업실</h2>
-                <p className="mt-2 text-xs leading-6 text-[#817787]">
-                  시즌성, 쇼핑 클릭 추이, 가격, 리뷰, 제휴 가능성을 살펴볼 예정이에요.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {products.map((product) => (
-                  <button
-                    key={product.id}
-                    onClick={() => { setSelectedProduct(product); setView("productDetail"); }}
-                    className="rounded-2xl border border-[#ECE8EA] bg-white p-5 text-left"
-                  >
-                    <div className="mb-3 flex h-24 items-center justify-center rounded-xl bg-[#F5F1F6] text-3xl text-[#8D789C]">◇</div>
-                    <div className="text-xs text-[#8B7898]">{product.category} · {product.season}</div>
-                    <h3 className="mt-2 font-semibold">{product.name}</h3>
-                    <p className="mt-2 text-xs text-[#918995]">{product.reason}</p>
-                    <p className="mt-3 text-xs text-[#817787]">{product.price}</p>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* 상품 상세 */}
-          {view === "productDetail" && selectedProduct && (
-            <section>
-              <button onClick={() => setView("products")} className="mb-5 text-xs text-[#715B80]">
-                ← 상품 목록으로
-              </button>
-              <div className="rounded-3xl bg-[#665174] p-6 text-white">
-                <div className="text-xs text-[#E0D5E8]">{selectedProduct.category}</div>
-                <h2 className="mt-3 text-2xl font-semibold">{selectedProduct.name}</h2>
-                <p className="mt-3 text-sm text-[#E6DDEB]">{selectedProduct.reason}</p>
-              </div>
-              <div className="mt-5 space-y-3">
-                {[
-                  ["시즌성", selectedProduct.season],
-                  ["가격", selectedProduct.price],
-                  ["콘텐츠 방향", selectedProduct.reason],
-                  ["제휴 가능 여부", "확인 필요 · 쇼핑커넥트에서 확인 예정"],
-                  ["판매 및 리뷰 데이터", "실제 데이터 연결 전"],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                    <div className="text-xs text-[#A49AA9]">{label}</div>
-                    <div className="mt-2 text-sm font-medium">{value}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* 키워드 발굴 */}
-          {view === "competitor" && <CompetitorAnalysis />}
-
-          {/* 글쓰기 */}
-          {view === "writing" && (
-            <section className="mx-auto max-w-3xl">
-              <div className="mb-7 rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#665174]">CONTENT CREATION</span>
-                  <span className="text-xs text-[#A49AA9]">STEP {writingStep} / 4</span>
-                </div>
-
-                <div className="mt-4 flex gap-2">
-                  {[1, 2, 3, 4].map((step) => (
-                    <div
-                      key={step}
-                      className={`h-1.5 flex-1 rounded-full ${
-                        writingStep >= step ? "bg-[#665174]" : "bg-[#EEE9F0]"
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <h2 className="mt-5 font-semibold">
-                  {writingStep === 1 && "어떤 글을 작성할까요?"}
-                  {writingStep === 2 && "나의 경험과 사진을 추가해 주세요."}
-                  {writingStep === 3 && "조사한 정보와 추가 메모를 입력해 주세요."}
-                  {writingStep === 4 && "작성 내용을 확인해 주세요."}
-                </h2>
-
-                <p className="mt-2 text-xs text-[#918995]">
-                  {writingStep === 1 && "콘텐츠의 목적과 형식을 선택해 주세요."}
-                  {writingStep === 2 && "기억나는 경험을 편하게 적고 사진을 첨부해 주세요."}
-                  {writingStep === 3 && "영업시간, 주차, 가격 등 조사한 정보를 자유롭게 붙여 넣으세요."}
-                  {writingStep === 4 && "입력한 경험과 자료를 확인해 주세요."}
-                </p>
-              </div>
-
-              {/* STEP 1. 콘텐츠 유형 */}
-              {writingStep === 1 && (
-                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 sm:p-7">
-                  <h3 className="font-semibold">콘텐츠 유형 선택</h3>
-                  <div className="mt-5 flex flex-col gap-3">
-                    {[
-                      ["실제 경험 후기", "직접 방문하거나 사용한 경험 중심"],
-                      ["정보형 콘텐츠", "일정, 가격, 방법 등 정보 정리"],
-                      ["비교 · 추천", "여러 장소나 제품의 장단점 비교"],
-                    ].map(([name, desc]) => (
-                      <button
-                        key={name}
-                        onClick={() => setWritingType(name)}
-                        className={`rounded-xl border p-4 text-left ${
-                          writingType === name
-                            ? "border-[#8D789C] bg-[#F7F3F9]"
-                            : "border-[#ECE8EA]"
-                        }`}
-                      >
-                        <div className="flex justify-between text-sm font-semibold">
-                          {name}
-                          <span>{writingType === name ? "●" : "○"}</span>
-                        </div>
-                        <p className="mt-2 text-xs text-[#918995]">{desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 2. 경험 메모와 사진 */}
-              {writingStep === 2 && (
-                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 sm:p-7">
-                  <h3 className="font-semibold">나의 경험과 이야기</h3>
-                  <p className="mt-2 text-xs text-[#918995]">
-                    완성된 문장이 아니어도 괜찮아요. 기억나는 내용을 편하게 적어 주세요.
-                  </p>
-
-                  <textarea
-                    value={writingNotes}
-                    onChange={(e) => setWritingNotes(e.target.value)}
-                    placeholder={"방문하게 된 계기\n찾아가는 과정과 첫인상\n직접 먹거나 이용한 것\n좋았던 점과 아쉬웠던 점\n아이의 반응이나 기억에 남는 순간\n다시 방문할 의향"}
-                    rows={10}
-                    className="mt-5 w-full resize-y rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-4 text-sm leading-7 outline-none focus:border-[#9B82AC]"
-                  />
-
-                  <h3 className="mt-7 text-sm font-semibold">사진 첨부</h3>
-                  <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#CDBFD5] bg-[#FAF8FB] p-7 text-center">
-                    <span className="text-2xl text-[#8D789C]">＋</span>
-                    <span className="mt-2 text-sm font-medium text-[#665174]">사진 선택하기</span>
-                    <span className="mt-1 text-xs text-[#A49AA9]">여러 장 선택 가능</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) =>
-                        setWritingFiles(Array.from(e.target.files ?? []).map((file) => file.name))
-                      }
-                    />
-                  </label>
-
-                  {writingFiles.length > 0 && (
-                    <div className="mt-4 rounded-xl bg-[#F8F5F9] p-4">
-                      <p className="text-xs font-semibold text-[#665174]">
-                        선택한 사진 {writingFiles.length}장
-                      </p>
-                      {writingFiles.map((file, i) => (
-                        <p key={`${file}-${i}`} className="mt-2 truncate text-xs text-[#817787]">
-                          {file}
-                        </p>
-                      ))}
-                      <button
-                        onClick={() => setWritingFiles([])}
-                        className="mt-3 text-xs text-[#A16D79]"
-                      >
-                        사진 초기화
-                      </button>
-                    </div>
-                  )}
-
-                  <p className="mt-3 text-[10px] text-[#A49AA9]">
-                    현재는 사진 파일명만 표시해요. 실제 사진 업로드는 추후 연결할 예정이에요.
-                  </p>
-                </div>
-              )}
-
-              {/* STEP 3. 조사 정보 및 추가 메모 */}
-              {writingStep === 3 && (
-                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 sm:p-7">
-                  <h3 className="font-semibold">조사한 정보 및 추가 메모</h3>
-                  <p className="mt-2 text-xs leading-6 text-[#918995]">
-                    직접 조사하거나 확인한 정보를 자유롭게 붙여 넣어 주세요.
-                    항목별로 나눠 적지 않아도 괜찮아요.
-                  </p>
-
-                  <textarea
-                    value={writingKeyword}
-                    onChange={(e) => setWritingKeyword(e.target.value)}
-                    placeholder={"예시\n\n주소: 서울 ○○구 ○○로\n영업시간: 매일 10:00~21:00\n주차: 건물 지하 주차장 2시간 무료\n가격: 대표 메뉴 15,000원\n예약: 네이버 예약 가능\n\n공식 홈페이지나 참고한 사이트 주소도 함께 적어 주세요.\n그 외에 글에 반영하고 싶은 내용도 자유롭게 입력해 주세요."}
-                    rows={14}
-                    className="mt-5 w-full resize-y rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-4 text-sm leading-7 outline-none focus:border-[#9B82AC]"
-                  />
-
-                  <div className="mt-4 rounded-xl bg-[#F8F5F9] p-4">
-                    <p className="text-xs leading-6 text-[#817787]">
-                      이 메모는 실제 경험과 구분해서 활용할 예정이에요.
-                      영업시간, 가격, 주차 등 확인이 필요한 정보는 추후 출처와 함께 검증하도록 구성할게요.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 4. 입력 내용 확인 */}
-              {writingStep === 4 && (
-                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 sm:p-7">
-                  <h3 className="font-semibold">작성 정보 확인</h3>
-
-                  <div className="mt-5 space-y-4">
-                    <div className="rounded-xl bg-[#F8F5F9] p-4">
-                      <p className="text-xs text-[#A49AA9]">글 유형</p>
-                      <p className="mt-2 text-sm font-semibold">{writingType}</p>
-                    </div>
-
-                    {writingTitle && (
-                      <div className="rounded-xl bg-[#F8F5F9] p-4">
-                        <p className="text-xs text-[#A49AA9]">선택한 주제</p>
-                        <p className="mt-2 text-sm font-semibold">{writingTitle}</p>
-                      </div>
-                    )}
-
-                    <div className="rounded-xl bg-[#F8F5F9] p-4">
-                      <p className="text-xs text-[#A49AA9]">나의 경험과 이야기</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[#716777]">
-                        {writingNotes || "작성된 메모가 없어요."}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-[#F8F5F9] p-4">
-                      <p className="text-xs text-[#A49AA9]">조사 정보 및 추가 메모</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[#716777]">
-                        {writingKeyword || "작성된 메모가 없어요."}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-[#F8F5F9] p-4">
-                      <p className="text-xs text-[#A49AA9]">첨부 사진</p>
-                      <p className="mt-2 text-sm">{writingFiles.length}장 선택</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 rounded-xl border border-[#EAE3EE] p-4">
-                    <p className="text-sm font-semibold text-[#665174]">다음 단계에서 진행할 작업</p>
-                    <ul className="mt-3 space-y-2 text-xs leading-6 text-[#817787]">
-                      <li>✓ 메모 내용에서 주제와 키워드 자동 추출</li>
-                      <li>✓ 네이버 검색 결과와 경쟁 콘텐츠 조사</li>
-                      <li>✓ 공식 자료 및 사실 확인</li>
-                      <li>✓ 제목 3개와 완성된 본문 생성</li>
-                    </ul>
-                  </div>
-
-                  <p className="mt-4 text-xs text-[#A49AA9]">
-                    실제 AI 분석과 글 생성은 API 연결 후 활성화할 예정이에요.
-                  </p>
-                </div>
-              )}
-
-              {/* 이전 / 다음 버튼 */}
-              <div className="mt-6 flex gap-3">
-                {writingStep > 1 && (
-                  <button
-                    onClick={() => setWritingStep(writingStep - 1)}
-                    className="flex-1 rounded-xl border border-[#EAE6E8] bg-white py-4 text-sm font-semibold text-[#716777]"
-                  >
-                    ← 이전
-                  </button>
-                )}
-
-                {writingStep < 4 ? (
-                  <button
-                    onClick={() => setWritingStep(writingStep + 1)}
-                    className="flex-1 rounded-xl bg-[#665174] py-4 text-sm font-semibold text-white"
-                  >
-                    다음 단계 →
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setWritingStep(2)}
-                    className="flex-1 rounded-xl bg-[#665174] py-4 text-sm font-semibold text-white"
-                  >
-                    내용 수정하기
-                  </button>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* 준비 중인 기능 */}
-          {view === "placeholder" && (
-            <section className="rounded-3xl border border-[#ECE8EA] bg-white p-6">
-              <h2 className="text-lg font-semibold">{activeMenu}</h2>
-              <p className="mt-3 text-sm leading-7 text-[#918995]">
-                이 기능은 다음 개발 단계에서 연결할 예정이에요.
-              </p>
-              <span className="mt-5 inline-block rounded-full bg-[#F3EFF5] px-3 py-2 text-xs text-[#715B80]">
-                준비 중
-              </span>
-            </section>
-          )}
-
-          <footer className="mt-12 border-t border-[#EAE6E8] py-6 text-center text-[10px] tracking-widest text-[#B0A8B2]">
-            PICKMOM LAB · FIND WHAT MATTERS
-          </footer>
+          <footer className="mt-12 border-t border-[#EAE6E8] py-6 text-center text-[10px] tracking-widest text-[#B0A8B2]">PICKMOM LAB · FIND WHAT MATTERS</footer>
         </main>
       </div>
 
-      {/* 모바일 하단 메뉴 */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#EAE6E8] bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 backdrop-blur md:hidden">
-        <div className="mx-auto flex max-w-lg items-center justify-around">
-          {[
-            { name: "Home", icon: "⌂" },
-            { name: "새 글 만들기", icon: "✎" },
-            { name: "시즌 상품 추천", icon: "◇" },
-          ].map((item) => (
-            <button
-              key={item.name}
-              onClick={() => goMenu(item.name)}
-              className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-1 text-[10px] ${
-                activeMenu === item.name ? "font-semibold text-[#665174]" : "text-[#A49AA9]"
-              }`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              {item.name === "시즌 상품 추천" ? "상품" : item.name === "새 글 만들기" ? "글쓰기" : "Home"}
-            </button>
-          ))}
-
-          <button
-            onClick={() => setMoreOpen(!moreOpen)}
-            className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-1 text-[10px] ${
-              moreOpen ? "font-semibold text-[#665174]" : "text-[#A49AA9]"
-            }`}
-          >
-            <span className="text-xl">☰</span>
-            더보기
-          </button>
-        </div>
-
-        {moreOpen && (
-          <div className="mx-auto mt-2 grid max-w-lg grid-cols-2 gap-2 border-t border-[#EEE9F0] px-2 pt-3">
-            <button
-              onClick={() => goMenu("릴스 · 클립 만들기")}
-              className="rounded-xl bg-[#F8F5F9] p-3 text-xs text-[#665174]"
-            >
-              ▷ 릴스 · 클립 만들기
-            </button>
-            <button
-              onClick={() => goMenu("템플릿 관리")}
-              className="rounded-xl bg-[#F8F5F9] p-3 text-xs text-[#665174]"
-            >
-              ▤ 템플릿 관리
-            </button>
-            <button
-              onClick={() => goMenu("키워드 발굴")}
-              className="rounded-xl bg-[#F8F5F9] p-3 text-xs text-[#665174]"
-            >
-              ⌕ 키워드 발굴
-            </button>
-          </div>
-        )}
-      </nav>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#EAE6E8] bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 backdrop-blur md:hidden"><div className="mx-auto flex max-w-lg items-center justify-around">{navItems.map((item) => <button key={item.id} onClick={() => navigate(item.id)} className={`flex min-w-0 flex-1 flex-col items-center gap-1 py-1 text-[10px] ${page === item.id ? "font-semibold text-[#665174]" : "text-[#A49AA9]"}`}><span className="text-xl">{item.icon}</span>{item.label}</button>)}</div></nav>
     </div>
   );
 }
