@@ -6,6 +6,7 @@ import PopularPostTemplates from "./components/popular-post-templates";
 import WritingStudio from "./components/writing-studio";
 
 type Category = "리빙·제품" | "맛집·카페" | "여행·체험" | "국내여행" | "해외여행" | "교육 정보" | "부동산·주거" | "생활·정책";
+type ActiveCategory = Exclude<Category, "여행·체험">;
 type Purpose = "경험 리뷰" | "비교·분석" | "정보 제공" | "문제 해결" | "추천·판매" | "직접 경험·방문 후기" | "정보 전달" | "추천·소개" | "문제 해결·노하우";
 type Status = "아이디어" | "키워드 선정" | "자료 조사" | "원고 작성" | "발행 준비" | "발행 완료";
 type Post = {
@@ -30,10 +31,10 @@ type DraftInput = {
   research: string;
 };
 
-const categories: Category[] = ["맛집·카페", "국내여행", "해외여행", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
+const categories: ActiveCategory[] = ["맛집·카페", "국내여행", "해외여행", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
 const purposes: Purpose[] = ["경험 리뷰", "비교·분석", "정보 제공", "문제 해결", "추천·판매"];
 const statuses: Status[] = ["아이디어", "키워드 선정", "자료 조사", "원고 작성", "발행 준비", "발행 완료"];
-const ideaSeeds: Record<Category, Array<{ title: string; keyword: string; purpose: Purpose; why: string }>> = {
+const ideaSeeds: Record<ActiveCategory, Array<{ title: string; keyword: string; purpose: Purpose; why: string }>> = {
   "맛집·카페": [
     { title: "서울 머랭롤 판매 매장과 메뉴 비교", keyword: "서울 머랭롤 맛집", purpose: "비교·분석", why: "판매 여부와 메뉴·가격·후기를 같은 기준으로 비교하는 주제" },
     { title: "아이와 가기 좋은 브런치 식당 고르는 기준", keyword: "아이와 브런치 맛집", purpose: "정보 제공", why: "좌석·주차·키즈 메뉴 등 방문 전 궁금한 정보를 정리하기 좋아요" },
