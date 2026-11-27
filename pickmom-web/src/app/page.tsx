@@ -302,19 +302,19 @@ export default function Home() {
                       <div className="mt-4 rounded-xl bg-[#F8F5F9] p-3"><p className="text-xs font-semibold text-[#665174]">이 글에서 조사할 것</p><p className="mt-1 text-xs leading-5 text-[#817787]">{idea.category === "맛집·카페" ? "판매 여부 · 메뉴/가격 · 매장 정보 · 실제 후기 비교" : idea.category === "여행·체험" ? "운영 기간 · 연령 · 예약 · 이용료 · 주차" : idea.category === "교육 정보" ? "공식 교육자료 · 대상 연령 · 학습 방식 · 준비 시기" : "공식 정보 · 가격/조건 · 비교 기준 · 장단점"}</p></div>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <a href={`https://www.google.com/search?q=${search}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">공식 홈페이지 ↗</a>
-                        <a href={`https://www.google.com/search?q=${instagramSearch}`} target="_blank" rel="noreferrer" className="rounded-lg border border-[#D8C9E5] bg-[#F8F5FA] px-3 py-2 text-xs font-semibold text-[#665174]">인스타 공식 게시물 찾기 ↗</a>
-                        <a href={`https://www.instagram.com/explore/tags/${encodeURIComponent(idea.keyword.replace(/\\s+/g, ""))}/`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">인스타 해시태그 ↗</a>
-                        <a href={`https://www.pexels.com/search/${photoSearch}/`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">무료 스톡 사진 ↗</a>
-                        <a href={`https://unsplash.com/s/photos/${photoSearch}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">Unsplash 사진 ↗</a>
+                        <a href={`https://www.pexels.com/search/${photoSearch}/`} target="_blank" rel="noreferrer" className="rounded-lg border border-[#D8C9E5] bg-[#F8F5FA] px-3 py-2 text-xs font-semibold text-[#665174]">Pexels 무료 사용 사진 ↗</a>
+                        <a href={`https://unsplash.com/s/photos/${photoSearch}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">Unsplash 무료 사용 사진 ↗</a>
+                        <a href="https://www.pexels.com/license/" target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">Pexels 이용 조건 ↗</a>
+                        <a href="https://unsplash.com/license" target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">Unsplash 이용 조건 ↗</a>
                         <a href={`https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(idea.keyword)}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">블로그 후기 확인 ↗</a>
                       </div>
                       <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose, researchBrief)} className="mt-4 rounded-lg bg-[#665174] px-3 py-2.5 text-xs font-semibold text-white">조사 방향을 담아 글쓰기 →</button>
                       <button onClick={() => setSelectedIdea((old) => old === idea.keyword ? null : idea.keyword)} className="ml-2 mt-4 rounded-lg border px-3 py-2.5 text-xs text-[#665174]">{selectedIdea === idea.keyword ? "사진 배치 안내 닫기" : "사진 배치 안내"}</button>
-                      {selectedIdea === idea.keyword && <div className="mt-3 rounded-xl border border-[#ECE8EA] p-3 text-xs leading-6 text-[#817787]"><b>권장 사진 순서</b><ol className="ml-4 list-decimal"><li>제목 아래: 주제를 대표하는 공식 사진</li><li>첫 번째 정보 문단 아래: 장소·제품의 전체 모습</li><li>세부 비교 문단 아래: 메뉴·시설·제품 디테일</li><li>비교 요약 아래: 차이를 보여주는 보충 사진</li></ol><p className="mt-2">각 사진은 원본 게시물 링크와 사용 허락 여부를 확인한 뒤 삽입하세요.</p></div>}
+                      {selectedIdea === idea.keyword && <div className="mt-3 rounded-xl border border-[#ECE8EA] p-3 text-xs leading-6 text-[#817787]"><b>권장 사진 순서</b><ol className="ml-4 list-decimal"><li>제목 아래: 주제를 대표하는 공식 사진</li><li>첫 번째 정보 문단 아래: 장소·제품의 전체 모습</li><li>세부 비교 문단 아래: 메뉴·시설·제품 디테일</li><li>비교 요약 아래: 차이를 보여주는 보충 사진</li></ol><p className="mt-2">Pexels·Unsplash에서 무료 사용 라이선스가 적용되는 사진을 우선 사용하고, 사진별 제한·상표·인물 초상권 등 별도 권리가 있는지 확인하세요. 별도 허락이 필요한 공식 SNS 사진은 사용 대상에서 제외합니다.</p></div>}
                     </article>;
                   })}
                 </div>}
-                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">※ 현재 추천은 카테고리 기반 편집 제안입니다. 실시간 검색량·경쟁도 검증이나 사진 원본 수집은 아직 자동화되지 않았으며, 검색 링크는 공식 자료를 찾기 위한 출발점입니다.</p>
+                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">※ 현재 추천은 카테고리 기반 편집 제안입니다. 실시간 검색량·경쟁도 검증이나 사진 원본 수집과 라이선스 자동 판별은 아직 자동화되지 않았으며, Pexels·Unsplash의 무료 사용 사진 검색 경로를 제공합니다. 각 사진의 이용 조건은 원본 페이지에서 확인해야 합니다.</p>
               </section>
 
               <section className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
