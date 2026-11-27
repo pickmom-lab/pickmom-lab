@@ -30,14 +30,14 @@ type DraftInput = {
   research: string;
 };
 
-const categories: Category[] = ["맛집·카페", "국내여행", "해외여행", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
+const categories: Category[] = ["맛집·카페", "국내여행", "해외여행", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
 const purposes: Purpose[] = ["경험 리뷰", "비교·분석", "정보 제공", "문제 해결", "추천·판매"];
 const statuses: Status[] = ["아이디어", "키워드 선정", "자료 조사", "원고 작성", "발행 준비", "발행 완료"];
 const ideas = [
   { category: "리빙·제품" as Category, title: "겨울철 집안 정리, 자주 쓰는 물건부터 바꾸기", keyword: "겨울 집 정리", purpose: "문제 해결" as Purpose, why: "계절 변화와 생활 불편을 연결한 실용형 주제" },
   { category: "리빙·제품" as Category, title: "매일 쓰는 주방 수납용품, 구매 전 확인할 기준", keyword: "주방 수납용품 추천", purpose: "비교·분석" as Purpose, why: "구매 전 비교 기준을 제시하기 좋은 주제" },
   { category: "맛집·카페" as Category, title: "아이와 함께 방문한 식당, 방문 전 확인할 것", keyword: "아이와 가기 좋은 식당", purpose: "경험 리뷰" as Purpose, why: "주차·좌석·메뉴 등 실제 경험을 담기 좋은 주제" },
-  { category: "국내여행" as Category, title: "아이와 떠나는 겨울 국내여행, 지역별 가족 여행지", keyword: "아이와 겨울 국내여행", purpose: "정보 제공" as Purpose, why: "이동 시간과 아이 연령, 날씨에 맞춰 국내 여행지를 고르는 데 도움이 되는 주제" },\n  { category: "해외여행" as Category, title: "아이와 겨울 해외여행, 가족 여행지 비교", keyword: "아이와 겨울 해외여행", purpose: "비교·분석" as Purpose, why: "비행시간·날씨·비용·리조트와 체험 요소를 같은 기준으로 비교하는 주제" },\n  { category: "여행·체험" as Category, title: "추운 날 아이와 가기 좋은 실내 체험 정리", keyword: "겨울 아이 실내 체험", purpose: "정보 제공" as Purpose, why: "시즌성과 지역 정보를 결합할 수 있는 주제" },
+  { category: "국내여행" as Category, title: "아이와 떠나는 겨울 국내여행, 지역별 가족 여행지", keyword: "아이와 겨울 국내여행", purpose: "정보 제공" as Purpose, why: "이동 시간과 아이 연령, 날씨에 맞춰 국내 여행지를 고르는 데 도움이 되는 주제" },\n  { category: "해외여행" as Category, title: "아이와 겨울 해외여행, 가족 여행지 비교", keyword: "아이와 겨울 해외여행", purpose: "비교·분석" as Purpose, why: "비행시간·날씨·비용·리조트와 체험 요소를 같은 기준으로 비교하는 주제" },\n  { category: "국내여행" as Category, title: "추운 날 아이와 가기 좋은 실내 체험 정리", keyword: "겨울 아이 실내 체험", purpose: "정보 제공" as Purpose, why: "시즌성과 지역 정보를 결합할 수 있는 주제" },
   { category: "교육 정보" as Category, title: "초등 입학 전 준비, 지금 확인할 생활 습관", keyword: "초등 입학 전 준비", purpose: "정보 제공" as Purpose, why: "학부모의 구체적인 준비 질문에 답하는 주제" },
   { category: "생활·정책" as Category, title: "연말에 놓치기 쉬운 생활 지원·신청 일정 확인", keyword: "연말 생활 지원 정보", purpose: "정보 제공" as Purpose, why: "공식 일정과 신청 조건 확인이 핵심인 주제" },
   { category: "부동산·주거" as Category, title: "이사 전 체크해야 할 관리비와 주거 비용 항목", keyword: "이사 전 주거 비용", purpose: "문제 해결" as Purpose, why: "실제 의사결정에 필요한 체크리스트형 주제" },
@@ -105,7 +105,7 @@ export default function Home() {
   const [popularKeyword, setPopularKeyword] = useState("");
   const [topicCategory, setTopicCategory] = useState<Category | "">("");
   const [selectedIdea, setSelectedIdea] = useState<string | null>(null);
-  const [preferredCategories, setPreferredCategories] = useState<Category[]>(["교육 정보", "국내여행", "해외여행", "여행·체험", "맛집·카페", "리빙·제품"]);
+  const [preferredCategories, setPreferredCategories] = useState<Category[]>(["교육 정보", "국내여행", "해외여행", "맛집·카페", "리빙·제품"]);
   const [showCategorySettings, setShowCategorySettings] = useState(false);
   const [draftInput, setDraftInput] = useState<DraftInput>({
     topic: "", keyword: "", category: "리빙·제품", purpose: "경험 리뷰", notes: "", research: "",
@@ -129,7 +129,7 @@ export default function Home() {
       const raw = window.localStorage.getItem("pickmom-blog-posts-v2");
       if (raw) { const stored = JSON.parse(raw) as Array<Omit<Post, "category"> & { category: string }>; setPosts(stored.map((post) => ({ ...post, category: (post.category === "쇼핑·제품" ? "리빙·제품" : post.category) as Category }))); }
       const savedCategories = window.localStorage.getItem("pickmom-preferred-categories-v1");
-      if (savedCategories) { const parsed = JSON.parse(savedCategories) as string[]; const migrated = parsed.includes("여행·체험") ? [...parsed, "국내여행", "해외여행"] : parsed; const valid = Array.from(new Set(migrated)).filter((value): value is Category => categories.includes(value as Category)); setPreferredCategories(valid); }
+      if (savedCategories) { const parsed = JSON.parse(savedCategories) as string[]; const migrated = parsed.includes("여행·체험") ? [...parsed.filter((value) => value !== "여행·체험"), "국내여행", "해외여행"] : parsed; const valid = Array.from(new Set(migrated)).filter((value): value is Category => categories.includes(value as Category)); setPreferredCategories(valid); }
     } catch {
       // Ignore invalid local data and keep the workspace usable.
     }
