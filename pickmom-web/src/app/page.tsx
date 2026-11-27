@@ -291,8 +291,6 @@ export default function Home() {
                       "사용자가 직접 경험한 내용은 별도 메모로 추가하고, 확인된 사실과 추정·의견을 구분해 작성하세요."
                     ].join("\n");
                     const search = encodeURIComponent(idea.keyword + " 공식 홈페이지");
-                    const images = encodeURIComponent(idea.keyword + " free stock photo");
-                    const instagramSearch = encodeURIComponent(`site:instagram.com ${idea.keyword} 공식`);
                     const photoSearch = encodeURIComponent(idea.keyword);
                     return <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
                       <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">추천 {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
