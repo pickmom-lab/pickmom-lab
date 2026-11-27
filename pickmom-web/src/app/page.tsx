@@ -5,7 +5,7 @@ import CompetitorAnalysis from "./components/competitor-analysis";
 import PopularPostTemplates from "./components/popular-post-templates";
 import WritingStudio from "./components/writing-studio";
 
-type Category = "리빙·제품" | "쇼핑·제품" | "맛집·카페" | "여행·체험" | "교육 정보" | "부동산·주거" | "생활·정책";
+type Category = "리빙·제품" | "맛집·카페" | "여행·체험" | "교육 정보" | "부동산·주거" | "생활·정책";
 type Purpose = "경험 리뷰" | "비교·분석" | "정보 제공" | "문제 해결" | "추천·판매" | "직접 경험·방문 후기" | "정보 전달" | "추천·소개" | "문제 해결·노하우";
 type Status = "아이디어" | "키워드 선정" | "자료 조사" | "원고 작성" | "발행 준비" | "발행 완료";
 type Post = {
@@ -328,6 +328,7 @@ export default function Home() {
             <WritingStudio
               key={editingId ?? "new"}
               initialKeyword={draftInput.keyword}
+              initialCategory={draftInput.category}
               initialData={editingId ? posts.find((post) => post.id === editingId)?.formData : undefined}
               onSave={(value) => {
                 const saved: Post = {
