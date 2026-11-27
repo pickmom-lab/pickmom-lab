@@ -329,7 +329,7 @@ export default function Home() {
               key={editingId ?? "new"}
               initialKeyword={draftInput.keyword}
               initialCategory={draftInput.category}
-              initialData={editingId ? posts.find((post) => post.id === editingId)?.formData : undefined}
+              initialData={editingId ? (posts.find((post) => post.id === editingId)?.formData || JSON.stringify(posts.find((post) => post.id === editingId) || {})) : undefined}
               onSave={(value) => {
                 const saved: Post = {
                   id: editingId ?? Date.now(),
