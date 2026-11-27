@@ -121,7 +121,7 @@ export default function Home() {
     setScheduleDate(dateKey(now));
     try {
       const raw = window.localStorage.getItem("pickmom-blog-posts-v2");
-      if (raw) setPosts(JSON.parse(raw) as Post[]);
+      if (raw) { const stored = JSON.parse(raw) as Array<Omit<Post, "category"> & { category: string }>; setPosts(stored.map((post) => ({ ...post, category: (post.category === "쇼핑·제품" ? "리빙·제품" : post.category) as Category }))); }
     } catch {
       // Ignore invalid local data and keep the workspace usable.
     }
