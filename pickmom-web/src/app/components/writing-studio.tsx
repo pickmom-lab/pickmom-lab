@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type Category = "맛집·카페" | "여행·체험" | "교육 정보" | "리빙·제품" | "생활·정책" | "부동산·주거";
+type Category = "맛집·카페" | "여행·체험" | "국내여행" | "해외여행" | "교육 정보" | "리빙·제품" | "생활·정책" | "부동산·주거";
 type Purpose = "정보" | "실사용 후기" | "비교" | "문제 해결";
 type Photo = { id: string; src: string; caption: string };
 type Props = {
@@ -14,9 +14,9 @@ type Props = {
   initialData?: string;
   onSave: (v: { title: string; keyword: string; category: Category; purpose: string; date: string; draft: string; photos: string[]; formData: string; status: "원고 작성" | "발행 준비" }) => void;
 };
-const categories: Category[] = ["맛집·카페", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
+const categories: Category[] = ["맛집·카페", "국내여행", "해외여행", "여행·체험", "교육 정보", "리빙·제품", "생활·정책", "부동산·주거"];
 const purposes: Purpose[] = ["정보", "실사용 후기", "비교", "문제 해결"];
-const detect = (s: string): Category => /맛집|식당|카페|디저트|빵|케이크|쿠키|국수|음식/.test(s) ? "맛집·카페" : /여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(s) ? "여행·체험" : /영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(s) ? "교육 정보" : /지원금|정책|신청|정부|할인|혜택|공휴일/.test(s) ? "생활·정책" : /부동산|아파트|전세|월세|청약|이사|주거/.test(s) ? "부동산·주거" : "리빙·제품";
+const detect = (s: string): Category => /맛집|식당|카페|디저트|빵|케이크|쿠키|국수|음식/.test(s) ? "맛집·카페" : /해외|국제선|항공권|일본|베트남|괌|발리|나트랑|다낭|싱가포르|해외여행/.test(s) ? "해외여행" : /국내|제주|강릉|부산|경주|전주|속초|여수|국내여행/.test(s) ? "국내여행" : /여행|호텔|리조트|나들이|체험|전시|마켓|가볼|실내/.test(s) ? "여행·체험" : /영어|수학|초등|유치원|학원|교육|책|독서|입학/.test(s) ? "교육 정보" : /지원금|정책|신청|정부|할인|혜택|공휴일/.test(s) ? "생활·정책" : /부동산|아파트|전세|월세|청약|이사|주거/.test(s) ? "부동산·주거" : "리빙·제품";
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
 const compressPhoto = (file: File) => new Promise<string>((resolve) => {
   const reader = new FileReader();
@@ -46,7 +46,7 @@ const compressPhoto = (file: File) => new Promise<string>((resolve) => {
 export default function WritingStudio({ initialKeyword = "", initialCategory, initialPurpose, initialNotes = "", initialPhotos, initialData, onSave }: Props) {
   const [keyword, setKeyword] = useState(initialKeyword);
   const [category, setCategory] = useState<Category>(initialCategory || detect(initialKeyword));
-  const [purpose, setPurpose] = useState<Purpose>(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보");
+  const [purpose, setPurpose] = useState<Purpose>(/맛집|카페|여행|체험|국내|해외|제주|일본|베트남|괌|발리|나트랑/.test(initialKeyword) ? "실사용 후기" : "정보");
   const [date, setDate] = useState(today());
   const [notes, setNotes] = useState("");
   const [researchPlan, setResearchPlan] = useState("");
