@@ -28,6 +28,9 @@ export default function WritingStudio({ initialKeyword = "", initialData, onSave
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
+    if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(detect(initialKeyword)); setPurpose(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보"); }
+  }, [initialKeyword, initialData]);
+  useEffect(() => {
     if (!initialData) return;
     try {
       const d = JSON.parse(initialData);
