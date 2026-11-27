@@ -114,22 +114,32 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     const data = { keyword, title, category, purpose, date, notes, tips, photoMeta: photos.map(({ id, caption }) => ({ id, caption })), draft };
     onSave({ title: title || keyword, keyword, category, purpose, date, draft, photos: photos.map(p => p.src), formData: JSON.stringify(data), status });
   };
+  const insertNoteStarter = () => {
+    const starters: Record<Purpose, string> = {
+      "실사용 후기": "왜 이용하게 됐나요?\\n이용 전 궁금했던 점은요?\\n직접 이용한 과정은 어땠나요?\\n가장 좋았던 점은요?\\n아쉬웠던 점이나 팁은요?",
+      "정보": "이 정보를 누가 필요로 할까요?\\n독자가 가장 궁금해할 질문은요?\\n확인한 공식 자료나 출처는요?\\n대상·조건·기간·비용 중 확인한 내용은요?\\n아직 확인하지 못한 내용은요?",
+      "비교": "무엇과 무엇을 비교하나요?\\n각 대상의 가격·조건은요?\\n가장 중요한 선택 기준은요?\\n각각의 장점과 아쉬운 점은요?\\n어떤 사람에게 어떤 선택이 맞을까요?",
+      "문제 해결": "어떤 문제가 있었나요?\\n어떤 상황에서 생겼나요?\\n확인된 원인은요?\\n시도한 해결 방법은요?\\n결과와 주의할 점은요?"
+    };
+    const starter = starters[purpose];
+    setNotes(old => old.trim() ? `${old.trim()}\\n\\n${starter}` : starter);
+  };
   const buildChatGPTPrompt = () => [
     "당신은 한국 네이버 블로그 전문 에디터입니다. 아래 사용자 제공 정보만 근거로 자연스러운 한국어 블로그 원고를 작성하세요.",
     "절대 규칙: 제공되지 않은 방문·구매 경험, 감정, 가격, 주소, 운영시간, 메뉴, 수치, 정책 조건을 만들지 마세요. 실제 후기에서는 사용자가 직접 경험했다고 말한 내용만 1인칭으로 쓰세요. 불확실하거나 최신 확인이 필요한 내용은 [직접 확인 필요]로 표시하세요. 사진은 실제로 분석하지 말고 사진 설명만 활용하세요. 핵심 경험과 세부사항을 임의로 삭제하지 말고, 자연스러운 했어요체로 작성하세요. 키워드 반복을 피하고 소제목으로 읽기 쉽게 구성하세요. 본문 사진 위치는 [이미지 번호 삽입 – 설명] 형식으로 표시하세요.",
     "콘텐츠 유형별 기준: 실사용 후기는 실제 동기·과정·장단점·팁을 입력 범위에서 구성, 정보 글은 핵심 질문 순서로 설명, 비교 글은 동일 기준으로 비교하고 근거 없는 우열 금지, 문제 해결 글은 확인된 원인과 해결 순서를 구분하세요.",
-    "분량은 자료에 맞춰 충분히 작성하되 반복하지 마세요. 제목 후보 3개를 먼저 제안하고, 최종 추천 제목 1개와 본문을 작성하세요.",
+    "분량은 자료에 맞춰 충분히 작성하되 반복하지 마세요. 제목 후보 3개를 먼저 제안하고, 최종 추천 제목 1개와 본문을 작성하세요.",\n    "입력 자료가 짧으면 확인된 사실만으로 초안을 구성하세요. 자료가 없는 항목은 [추가 입력 필요] 또는 [공식 자료 확인 필요]로 표시하세요. 실사용 후기의 경험이 비어 있으면 체험담을 만들지 말고 사용자가 채울 문장 틀을 제시하세요.",
     `핵심 키워드: ${keyword.trim()}`,
     `카테고리: ${category}`,
     `콘텐츠 유형: ${purpose}`,
     `조사·비교 기획안:\n${researchPlan.trim() || "별도 기획안 없음"}`,
-    `사용자가 제공한 경험·자료:\n${notes.trim()}`,
+    `사용자가 제공한 경험·자료:\n${notes.trim() || "아직 입력하지 않았습니다. 실제 경험이나 사실을 만들지 말고 글의 구조와 추가 입력이 필요한 부분을 표시하세요."}`,
     tips.trim() ? `추가 요청:\n${tips.trim()}` : "",
     `사진 설명(실제 이미지 분석 아님):\n${photos.map((p,i)=>`사진 ${i+1}: ${p.caption.trim() || "설명 없음"}`).join("\n") || "첨부 사진 없음"}`,
     "출력 형식: 제목 후보 3개, 최종 제목, 본문을 구분해 주세요. 근거가 없는 정보는 추측하지 마세요."
   ].filter(Boolean).join("\n\n");
   const sendToChatGPT = async () => {
-    if (!keyword.trim() || !notes.trim()) { setExternalStatus("핵심 키워드와 경험·자료를 먼저 입력해 주세요."); return; }
+    if (!keyword.trim()) { setExternalStatus("핵심 키워드를 먼저 입력해 주세요."); return; }
     const prompt = buildChatGPTPrompt();
     // ChatGPT's q parameter pre-fills the composer; the user reviews and sends it there.
     const chatUrl = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`;
@@ -210,14 +220,14 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
       <button disabled={!keyword.trim()} onClick={()=>setStep(2)} className="mt-5 rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">다음 단계 →</button>
     </div>}
     {step===2 && <div className="space-y-4 rounded-2xl border bg-white p-5 md:p-6">
-      <div><h3 className="font-semibold">경험과 알고 있는 내용을 편하게 적어주세요.</h3><p className="mt-1 text-xs leading-5 text-[#918995]">항목별로 나눠 입력할 필요 없습니다. 방문 과정, 좋았던 점, 아쉬운 점, 가격, 주소, 주차 등 기억나는 내용을 한 번에 적으면 AI가 글의 유형에 맞춰 정리하도록 설계합니다.</p></div>
+      <div><h3 className="font-semibold">경험과 알고 있는 내용을 편하게 적어주세요.</h3><p className="mt-1 text-xs leading-5 text-[#918995]">완성된 문장으로 쓸 필요 없어요. 단어와 짧은 메모만 적어도 됩니다. 자료가 없다면 아래 질문을 넣어 하나씩 채우거나, 키워드만으로 글의 뼈대부터 만들 수 있어요.</p><button type="button" onClick={insertNoteStarter} className="mt-3 rounded-lg border border-[#DCD2E3] bg-[#F8F5F9] px-3 py-2 text-xs font-semibold text-[#665174]">내 글 유형에 맞는 메모 질문 넣기</button></p></div>
       {researchPlan.trim() && <div className="rounded-xl border border-[#E5DCEB] bg-[#F8F5F9] p-4"><h4 className="text-sm font-semibold text-[#665174]">이 주제의 조사·비교 제안</h4><p className="mt-1 text-[11px] leading-5 text-[#817787]">아래 내용을 바탕으로 자료를 확인한 뒤, 본인이 찾은 정보와 의견을 추가해 주세요.</p><pre className="mt-3 whitespace-pre-wrap font-sans text-xs leading-6 text-[#665174]">{researchPlan}</pre></div>}
-      <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={9} placeholder="확인한 정보, 직접 경험, 공식 자료의 내용, 실제 후기에서 발견한 공통점 등을 적어주세요." className="w-full rounded-xl border p-4 text-sm leading-7"/>
+      <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={9} placeholder="예: 주차 편했음 / 아이가 만들기 수업을 좋아함 / 책을 재미있게 읽어주심… 짧은 메모만 적어도 돼요." className="w-full rounded-xl border p-4 text-sm leading-7"/>
       <div className="rounded-xl border border-dashed p-4"><h4 className="text-sm font-semibold">사진 첨부 (최대 12장)</h4><input type="file" accept="image/*" multiple disabled={busy||photos.length>=12} onChange={e=>{void addPhotos(e.target.files);e.currentTarget.value="";}} className="mt-3 w-full text-xs"/>{photos.map((p,i)=><div key={p.id} className="mt-3 flex items-center gap-3 border-t pt-3"><img src={p.src} alt="" className="h-16 w-16 rounded-lg object-cover"/><div className="min-w-0 flex-1"><input value={p.caption} onChange={e=>setPhotos(old=>old.map((x,j)=>j===i?{...x,caption:e.target.value}:x))} placeholder="선택: 사진 설명" className="w-full rounded border p-2 text-xs"/><div className="mt-2 flex gap-3 text-xs"><button onClick={()=>movePhoto(i,-1)} disabled={!i}>위로</button><button onClick={()=>movePhoto(i,1)} disabled={i===photos.length-1}>아래로</button><button onClick={()=>setPhotos(old=>old.filter((_,j)=>j!==i))} className="text-rose-700">삭제</button></div></div></div>)}</div>
       <button onClick={()=>setShowTips(v=>!v)} className="text-xs font-semibold text-[#665174]">{showTips?"▾":"▸"} 이번 글 작성 팁 (선택)</button>{showTips&&<textarea value={tips} onChange={e=>setTips(e.target.value)} rows={3} placeholder="이번 글에만 적용할 요청사항" className="w-full rounded-xl border p-3 text-sm"/>}
-      <div className="flex flex-wrap gap-2"><button onClick={()=>setStep(1)} disabled={generating} className="rounded-xl border px-4 py-3 text-sm disabled:opacity-50">← 이전</button><button onClick={()=>void sendToChatGPT()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl border border-[#665174] px-4 py-3 text-sm font-semibold text-[#665174] disabled:opacity-50">ChatGPT로 보내기</button><button onClick={()=>void generateWithGemini()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl border border-[#4285F4] px-4 py-3 text-sm font-semibold text-[#3367D6] disabled:opacity-50">Gemini로 작성</button><button onClick={()=>void generateDraft()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">{generating ? "AI가 원고를 작성하고 있어요..." : "OpenAI API로 작성"}</button></div>{externalStatus && <p role="status" className="rounded-lg bg-[#F5F1F6] p-3 text-xs leading-5 text-[#665174]">{externalStatus}</p>}{externalPrompt && <textarea readOnly value={externalPrompt} rows={8} className="w-full rounded-xl border p-3 text-xs leading-5" onFocus={e=>e.currentTarget.select()}/>}
+      <div className="flex flex-wrap gap-2"><button onClick={()=>setStep(1)} disabled={generating} className="rounded-xl border px-4 py-3 text-sm disabled:opacity-50">← 이전</button><button onClick={()=>void sendToChatGPT()} disabled={generating || !keyword.trim()} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">ChatGPT로 초안 만들기</button><button onClick={()=>void generateWithGemini()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl border px-3 py-3 text-xs disabled:opacity-50">Gemini API</button><button onClick={()=>void generateDraft()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl border px-3 py-3 text-xs disabled:opacity-50">{generating ? "작성 중..." : "OpenAI API"}</button></div>{externalStatus && <p role="status" className="rounded-lg bg-[#F5F1F6] p-3 text-xs leading-5 text-[#665174]">{externalStatus}</p>}{externalPrompt && <textarea readOnly value={externalPrompt} rows={8} className="w-full rounded-xl border p-3 text-xs leading-5" onFocus={e=>e.currentTarget.select()}/>}
       {generationError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs leading-5 text-rose-700">{generationError}</p>}
-      <p className="text-[10px] leading-5 text-[#A49AA9]">입력한 경험과 자료를 바탕으로 AI 초안을 생성합니다. 사진 자체를 분석하는 기능과 외부 자료의 실시간 사실 확인은 아직 포함되지 않습니다. 가격·주소·운영시간 등은 발행 전에 공식 출처로 확인해 주세요.</p>
+      <p className="text-[10px] leading-5 text-[#A49AA9]">ChatGPT 버튼은 별도 API 키 없이 ChatGPT 입력창을 여는 방식이며, 열린 화면에서 직접 전송해야 합니다. 조사·비교 제안은 실제 검색 결과가 아니라 글의 구성 가이드일 수 있으므로, 가격·주소·운영시간 등은 공식 출처로 확인해 주세요.</p>
     </div>}
     {step===3 && <div className="rounded-2xl border bg-white p-5 md:p-6">
       <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">통합 원고 편집기</h3><p className="mt-1 text-xs text-[#918995]">AI가 생성한 초안을 제목과 본문 한 화면에서 직접 수정합니다.</p></div><button onClick={()=>setStep(2)} className="text-xs text-[#665174]">← 입력 수정</button></div>
