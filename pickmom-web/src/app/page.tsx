@@ -41,6 +41,9 @@ const ideas = [
   { category: "교육 정보" as Category, title: "초등 입학 전 준비, 지금 확인할 생활 습관", keyword: "초등 입학 전 준비", purpose: "정보 제공" as Purpose, why: "학부모의 구체적인 준비 질문에 답하는 주제" },
   { category: "생활·정책" as Category, title: "연말에 놓치기 쉬운 생활 지원·신청 일정 확인", keyword: "연말 생활 지원 정보", purpose: "정보 제공" as Purpose, why: "공식 일정과 신청 조건 확인이 핵심인 주제" },
   { category: "부동산·주거" as Category, title: "이사 전 체크해야 할 관리비와 주거 비용 항목", keyword: "이사 전 주거 비용", purpose: "문제 해결" as Purpose, why: "실제 의사결정에 필요한 체크리스트형 주제" },
+  { category: "맛집·카페" as Category, title: "서울 머랭롤 판매 매장과 메뉴 비교", keyword: "서울 머랭롤 맛집", purpose: "비교·분석" as Purpose, why: "판매 여부·메뉴 구성·가격·후기를 같은 기준으로 비교하는 정보형 주제" },
+  { category: "여행·체험" as Category, title: "겨울방학 아이와 갈 만한 실내 체험 비교", keyword: "서울 겨울 실내 체험", purpose: "비교·분석" as Purpose, why: "연령·운영일·예약·주차·체험 내용을 비교해 방문 전 판단을 돕는 주제" },
+  { category: "교육 정보" as Category, title: "초등 입학 전 영어·수학 학습 준비 비교", keyword: "초등 입학 전 학습 준비", purpose: "비교·분석" as Purpose, why: "교재·학습 방식·준비 시기를 비교하되 공식 교육과정과 개인 의견을 구분하는 주제" },
 ];
 
 const statusClass: Record<Status, string> = {
@@ -101,7 +104,9 @@ export default function Home() {
   const [homeSearchKeyword, setHomeSearchKeyword] = useState("");
   const [popularKeyword, setPopularKeyword] = useState("");
   const [topicCategory, setTopicCategory] = useState<Category | "">("");
-  const [selectedIdea, setSelectedIdea] = useState<number | null>(null);
+  const [selectedIdea, setSelectedIdea] = useState<string | null>(null);
+  const [preferredCategories, setPreferredCategories] = useState<Category[]>(["교육 정보", "여행·체험", "맛집·카페", "리빙·제품"]);
+  const [showCategorySettings, setShowCategorySettings] = useState(false);
   const [draftInput, setDraftInput] = useState<DraftInput>({
     topic: "", keyword: "", category: "리빙·제품", purpose: "경험 리뷰", notes: "", research: "",
   });
@@ -123,6 +128,8 @@ export default function Home() {
     try {
       const raw = window.localStorage.getItem("pickmom-blog-posts-v2");
       if (raw) { const stored = JSON.parse(raw) as Array<Omit<Post, "category"> & { category: string }>; setPosts(stored.map((post) => ({ ...post, category: (post.category === "쇼핑·제품" ? "리빙·제품" : post.category) as Category }))); }
+      const savedCategories = window.localStorage.getItem("pickmom-preferred-categories-v1");
+      if (savedCategories) { const parsed = JSON.parse(savedCategories) as string[]; const valid = parsed.filter((value): value is Category => categories.includes(value as Category)); if (valid.length) setPreferredCategories(valid); }
     } catch {
       // Ignore invalid local data and keep the workspace usable.
     }
@@ -132,6 +139,12 @@ export default function Home() {
   useEffect(() => {
     if (loaded) window.localStorage.setItem("pickmom-blog-posts-v2", JSON.stringify(posts));
   }, [posts, loaded]);
+
+  useEffect(() => {
+    if (loaded) window.localStorage.setItem("pickmom-preferred-categories-v1", JSON.stringify(preferredCategories));
+  }, [preferredCategories, loaded]);
+
+  const visibleIdeas = ideas.filter((idea) => preferredCategories.includes(idea.category));
 
   const weekStart = mondayOf(today);
   const weekEnd = new Date(weekStart);
@@ -164,10 +177,10 @@ export default function Home() {
     if (/지원금|정책|신청|정부|할인|혜택|노동절|공휴일/.test(text)) return "생활·정책";
     return "리빙·제품";
   };
-  const startWriting = (topic = "", keyword = "", category?: Category, purpose?: Purpose) => {
+  const startWriting = (topic = "", keyword = "", category?: Category, purpose?: Purpose, researchBrief = "") => {
     const detectedCategory = category || inferCategory(keyword || topic);
     const detectedPurpose = purpose || (detectedCategory === "맛집·카페" || detectedCategory === "여행·체험" ? "경험 리뷰" : "정보 제공");
-    setDraftInput({ topic, keyword, category: detectedCategory, purpose: detectedPurpose, notes: "", research: "" });
+    setDraftInput({ topic, keyword, category: detectedCategory, purpose: detectedPurpose, notes: "", research: researchBrief });
     setScheduleDate(dateKey(new Date()));
     setAngle("");
     setDraft("");
@@ -255,22 +268,48 @@ export default function Home() {
               </section>
 
               <section className="mb-8">
-                <div className="mb-4 flex items-end justify-between gap-3">
-                  <div><h2 className="text-lg font-semibold">이번 주 추천 포스팅 7개</h2><p className="mt-1 text-xs text-[#A49AA9]">관심 분야와 시즌별 콘텐츠 아이디어를 바탕으로 구성합니다.</p></div>
-                  <span className="shrink-0 text-[10px] text-[#9A8AA4]">WEEKLY IDEAS</span>
+                <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                  <div><h2 className="text-lg font-semibold">내 관심 분야의 이번 주 글감</h2><p className="mt-1 text-xs text-[#A49AA9]">선택한 카테고리에 맞춰 정보·비교형 주제를 먼저 제안해요.</p></div>
+                  <button onClick={() => setShowCategorySettings((value) => !value)} className="rounded-lg border border-[#E6E0E8] px-3 py-2 text-xs font-semibold text-[#665174]">{showCategorySettings ? "관심 분야 닫기" : "관심 분야 설정 ⚙"}</button>
                 </div>
+                {showCategorySettings && <div className="mb-4 rounded-2xl border border-[#EAE4ED] bg-white p-4">
+                  <p className="mb-3 text-xs font-medium text-[#817787]">자주 쓰는 카테고리를 선택하세요. 선택 내용은 이 브라우저에 저장됩니다.</p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{categories.map((category) => <label key={category} className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#F0ECF1] p-3 text-xs"><input type="checkbox" checked={preferredCategories.includes(category)} onChange={(event) => setPreferredCategories((old) => event.target.checked ? [...old, category] : old.filter((value) => value !== category))} />{category}</label>)}</div>
+                  {preferredCategories.length === 0 && <p className="mt-2 text-xs text-rose-600">추천을 보려면 카테고리를 하나 이상 선택해 주세요.</p>}
+                </div>}
+                {visibleIdeas.length === 0 ? <div className="rounded-2xl border border-dashed border-[#DED6E3] bg-white p-8 text-center text-sm text-[#918995]">관심 카테고리를 하나 이상 선택하면 관련 글감이 여기에 보여요.</div> :
                 <div className="grid gap-3 lg:grid-cols-2">
-                  {ideas.slice(0, 7).map((idea, i) => (
-                    <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                      <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">IDEA {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
+                  {visibleIdeas.map((idea, i) => {
+                    const researchBrief = [
+                      "[PICKMOM LAB 사전 조사 방향]",
+                      "콘텐츠 유형: 직접 방문 후기가 아닌 정보·비교형으로 시작합니다. 실제 경험이 없는 내용은 방문한 것처럼 쓰지 마세요.",
+                      `추천 이유: ${idea.why}`,
+                      `조사할 항목: ${idea.category === "맛집·카페" ? "현재 판매 여부, 대표 메뉴와 가격, 지점·주소, 영업시간, 실제 후기의 공통점과 차이" : idea.category === "여행·체험" ? "운영 기간·요일, 연령 제한, 예약 방법, 이용료, 주차, 실내 시설과 체험 내용" : idea.category === "교육 정보" ? "공식 교육자료, 대상 연령, 준비 시기, 학습 방식별 장단점, 근거가 되는 기관 자료" : "공식 제품·기관 정보, 가격과 조건, 비교 기준, 장단점, 업데이트 날짜"}`,
+                      "자료 검증: 변동 정보는 공식 홈페이지·공식 SNS·기관 공지를 우선 확인하고, 출처 URL과 확인 날짜를 기록하세요. 검색량이나 문서 수를 확인하지 못했다면 수치로 표현하지 마세요.",
+                      "사진 계획: 대표 이미지 1장(공식 출처), 장소·제품의 세부 사진 2~3장, 비교 항목을 설명하는 사진 1장. 사진마다 원본 게시물 URL과 이용 허락 여부를 확인하고, 무단 다운로드·재사용은 하지 마세요.",
+                      "사진 삽입 위치: 제목 아래 대표 사진 → 업체/장소 소개 문단 아래 외관·대표 이미지 → 메뉴·시설·제품 비교 문단 아래 세부 사진 → 비교 요약 아래 보충 사진.",
+                      "사용자가 직접 경험한 내용은 별도 메모로 추가하고, 확인된 사실과 추정·의견을 구분해 작성하세요."
+                    ].join("\\n");
+                    const search = encodeURIComponent(idea.keyword + " 공식 홈페이지 인스타그램 사진");
+                    const images = encodeURIComponent(idea.keyword + " 공식");
+                    return <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
+                      <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">추천 {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
                       <h3 className="mt-3 text-sm font-semibold leading-6">{idea.title}</h3>
                       <p className="mt-2 text-xs text-[#918995]">핵심 키워드 · {idea.keyword}</p>
                       <p className="mt-3 text-xs leading-5 text-[#817787]">{idea.why}</p>
-                      <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose)} className="mt-4 rounded-lg bg-[#665174] px-3 py-2.5 text-xs font-semibold text-white">이 주제로 바로 글쓰기 →</button>
-                    </article>
-                  ))}
-                </div>
-                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">※ 현재 표시된 추천 주제는 편집용 예시입니다. 실시간 인기 키워드나 개인 관심사 기반 추천으로 오인되지 않도록 실제 데이터 연결 전까지 예시임을 표시합니다.</p>
+                      <div className="mt-4 rounded-xl bg-[#F8F5F9] p-3"><p className="text-xs font-semibold text-[#665174]">이 글에서 조사할 것</p><p className="mt-1 text-xs leading-5 text-[#817787]">{idea.category === "맛집·카페" ? "판매 여부 · 메뉴/가격 · 매장 정보 · 실제 후기 비교" : idea.category === "여행·체험" ? "운영 기간 · 연령 · 예약 · 이용료 · 주차" : idea.category === "교육 정보" ? "공식 교육자료 · 대상 연령 · 학습 방식 · 준비 시기" : "공식 정보 · 가격/조건 · 비교 기준 · 장단점"}</p></div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <a href={`https://www.google.com/search?q=${search}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">공식 출처 찾기 ↗</a>
+                        <a href={`https://www.google.com/search?tbm=isch&q=${images}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">사진 검색 ↗</a>
+                        <a href={`https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(idea.keyword)}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">블로그 후기 확인 ↗</a>
+                      </div>
+                      <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose, researchBrief)} className="mt-4 rounded-lg bg-[#665174] px-3 py-2.5 text-xs font-semibold text-white">조사 방향을 담아 글쓰기 →</button>
+                      <button onClick={() => setSelectedIdea((old) => old === idea.keyword ? null : idea.keyword)} className="ml-2 mt-4 rounded-lg border px-3 py-2.5 text-xs text-[#665174]">{selectedIdea === idea.keyword ? "사진 배치 안내 닫기" : "사진 배치 안내"}</button>
+                      {selectedIdea === idea.keyword && <div className="mt-3 rounded-xl border border-[#ECE8EA] p-3 text-xs leading-6 text-[#817787]"><b>권장 사진 순서</b><ol className="ml-4 list-decimal"><li>제목 아래: 주제를 대표하는 공식 사진</li><li>첫 번째 정보 문단 아래: 장소·제품의 전체 모습</li><li>세부 비교 문단 아래: 메뉴·시설·제품 디테일</li><li>비교 요약 아래: 차이를 보여주는 보충 사진</li></ol><p className="mt-2">각 사진은 원본 게시물 링크와 사용 허락 여부를 확인한 뒤 삽입하세요.</p></div>}
+                    </article>;
+                  })}
+                </div>}
+                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">※ 현재 추천은 카테고리 기반 편집 제안입니다. 실시간 검색량·경쟁도 검증이나 사진 원본 수집은 아직 자동화되지 않았으며, 검색 링크는 공식 자료를 찾기 위한 출발점입니다.</p>
               </section>
 
               <section className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -294,6 +333,7 @@ export default function Home() {
               key={editingId ?? "new"}
               initialKeyword={draftInput.keyword}
               initialCategory={draftInput.category}
+              initialNotes={draftInput.research}
               initialPhotos={editingId ? posts.find((post) => post.id === editingId)?.photos : undefined}
               initialData={editingId ? (posts.find((post) => post.id === editingId)?.formData || JSON.stringify(posts.find((post) => post.id === editingId) || {})) : undefined}
               onSave={(value) => {
