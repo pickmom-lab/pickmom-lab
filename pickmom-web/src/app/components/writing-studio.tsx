@@ -54,6 +54,10 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
   const [showTips, setShowTips] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [busy, setBusy] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState("");
+  const [externalStatus, setExternalStatus] = useState("");
+  const [externalPrompt, setExternalPrompt] = useState("");
   useEffect(() => {
     if (!initialData) { setKeyword(initialKeyword); setTitle(initialKeyword); setCategory(initialCategory || detect(initialKeyword)); setPurpose(/맛집|카페|여행|체험/.test(initialKeyword) ? "실사용 후기" : "정보"); }
   }, [initialKeyword, initialCategory, initialData]);
@@ -107,6 +111,89 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
     const data = { keyword, title, category, purpose, date, notes, tips, photoMeta: photos.map(({ id, caption }) => ({ id, caption })), draft };
     onSave({ title: title || keyword, keyword, category, purpose, date, draft, photos: photos.map(p => p.src), formData: JSON.stringify(data), status });
   };
+  const buildChatGPTPrompt = () => [
+    "당신은 한국 네이버 블로그 전문 에디터입니다. 아래 사용자 제공 정보만 근거로 자연스러운 한국어 블로그 원고를 작성하세요.",
+    "절대 규칙: 제공되지 않은 방문·구매 경험, 감정, 가격, 주소, 운영시간, 메뉴, 수치, 정책 조건을 만들지 마세요. 실제 후기에서는 사용자가 직접 경험했다고 말한 내용만 1인칭으로 쓰세요. 불확실하거나 최신 확인이 필요한 내용은 [직접 확인 필요]로 표시하세요. 사진은 실제로 분석하지 말고 사진 설명만 활용하세요. 핵심 경험과 세부사항을 임의로 삭제하지 말고, 자연스러운 했어요체로 작성하세요. 키워드 반복을 피하고 소제목으로 읽기 쉽게 구성하세요. 본문 사진 위치는 [이미지 번호 삽입 – 설명] 형식으로 표시하세요.",
+    "콘텐츠 유형별 기준: 실사용 후기는 실제 동기·과정·장단점·팁을 입력 범위에서 구성, 정보 글은 핵심 질문 순서로 설명, 비교 글은 동일 기준으로 비교하고 근거 없는 우열 금지, 문제 해결 글은 확인된 원인과 해결 순서를 구분하세요.",
+    "분량은 자료에 맞춰 충분히 작성하되 반복하지 마세요. 제목 후보 3개를 먼저 제안하고, 최종 추천 제목 1개와 본문을 작성하세요.",
+    `핵심 키워드: ${keyword.trim()}`,
+    `카테고리: ${category}`,
+    `콘텐츠 유형: ${purpose}`,
+    `사용자가 제공한 경험·자료:\n${notes.trim()}`,
+    tips.trim() ? `추가 요청:\n${tips.trim()}` : "",
+    `사진 설명(실제 이미지 분석 아님):\n${photos.map((p,i)=>`사진 ${i+1}: ${p.caption.trim() || "설명 없음"}`).join("\n") || "첨부 사진 없음"}`,
+    "출력 형식: 제목 후보 3개, 최종 제목, 본문을 구분해 주세요. 근거가 없는 정보는 추측하지 마세요."
+  ].filter(Boolean).join("\n\n");
+  const sendToChatGPT = async () => {
+    if (!keyword.trim() || !notes.trim()) { setExternalStatus("핵심 키워드와 경험·자료를 먼저 입력해 주세요."); return; }
+    const prompt = buildChatGPTPrompt();
+    // ChatGPT's q parameter pre-fills the composer; the user reviews and sends it there.
+    const chatUrl = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`;
+    if (prompt.length <= 5500) {
+      window.open(chatUrl, "_blank", "noopener,noreferrer");
+      setExternalPrompt("");
+      setExternalStatus("입력 내용이 ChatGPT에 전달됐어요. ChatGPT 입력창에서 내용을 확인한 뒤 전송해 주세요.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(prompt);
+      window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
+      setExternalPrompt("");
+      setExternalStatus("내용이 길어 자동 입력 대신 복사했어요. 열린 ChatGPT 입력창에 붙여넣어 주세요.");
+    } catch {
+      setExternalPrompt(prompt);
+      setExternalStatus("내용이 길어 직접 복사가 필요해요. 아래 프롬프트를 복사해 ChatGPT에 붙여넣어 주세요.");
+    }
+  };
+  const generateWithGemini = async () => {
+    if (!keyword.trim() || !notes.trim()) { setGenerationError("핵심 키워드와 경험·자료를 먼저 입력해 주세요."); return; }
+    setGenerating(true); setGenerationError(""); setExternalStatus("");
+    try {
+      const response = await fetch("/api/gemini/generate-draft", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keyword: keyword.trim(), category, purpose, notes: notes.trim(), tips: tips.trim(),
+          photoCaptions: photos.map((photo,index)=>({number:index+1,caption:photo.caption.trim()}))
+        })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Gemini 원고 생성에 실패했습니다.");
+      setTitle(result.title || keyword); setDraft(result.body || ""); setStep(3);
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : "Gemini 원고 생성 중 오류가 발생했습니다.");
+    } finally { setGenerating(false); }
+  };
+  const generateDraft = async () => {
+    if (!keyword.trim() || !notes.trim()) {
+      setGenerationError("핵심 키워드와 경험·자료를 먼저 입력해 주세요.");
+      return;
+    }
+    setGenerating(true);
+    setGenerationError("");
+    try {
+      const response = await fetch("/api/openai/generate-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keyword: keyword.trim(),
+          category,
+          purpose,
+          notes: notes.trim(),
+          tips: tips.trim(),
+          photoCaptions: photos.map((photo, index) => ({ number: index + 1, caption: photo.caption.trim() })),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "원고 생성에 실패했습니다.");
+      setTitle(result.title || keyword);
+      setDraft(result.body || "");
+      setStep(3);
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : "원고 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setGenerating(false);
+    }
+  };
   return <section className="mx-auto max-w-4xl space-y-5 pb-8">
     <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
       <div className="flex items-center justify-between"><div><p className="text-xs font-semibold text-[#80678F]">PICKMOM LAB · WRITING FLOW</p><h2 className="mt-1 font-semibold">키워드 조사부터 원고 완성까지</h2></div><span className="text-xs text-[#918995]">STEP {step}/3</span></div>
@@ -124,13 +211,14 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
       <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={9} placeholder="예: 어디를 방문했는지, 왜 선택했는지, 실제로 어땠는지, 독자에게 알려주고 싶은 점을 자유롭게 적어주세요." className="w-full rounded-xl border p-4 text-sm leading-7"/>
       <div className="rounded-xl border border-dashed p-4"><h4 className="text-sm font-semibold">사진 첨부 (최대 12장)</h4><input type="file" accept="image/*" multiple disabled={busy||photos.length>=12} onChange={e=>{void addPhotos(e.target.files);e.currentTarget.value="";}} className="mt-3 w-full text-xs"/>{photos.map((p,i)=><div key={p.id} className="mt-3 flex items-center gap-3 border-t pt-3"><img src={p.src} alt="" className="h-16 w-16 rounded-lg object-cover"/><div className="min-w-0 flex-1"><input value={p.caption} onChange={e=>setPhotos(old=>old.map((x,j)=>j===i?{...x,caption:e.target.value}:x))} placeholder="선택: 사진 설명" className="w-full rounded border p-2 text-xs"/><div className="mt-2 flex gap-3 text-xs"><button onClick={()=>movePhoto(i,-1)} disabled={!i}>위로</button><button onClick={()=>movePhoto(i,1)} disabled={i===photos.length-1}>아래로</button><button onClick={()=>setPhotos(old=>old.filter((_,j)=>j!==i))} className="text-rose-700">삭제</button></div></div></div>)}</div>
       <button onClick={()=>setShowTips(v=>!v)} className="text-xs font-semibold text-[#665174]">{showTips?"▾":"▸"} 이번 글 작성 팁 (선택)</button>{showTips&&<textarea value={tips} onChange={e=>setTips(e.target.value)} rows={3} placeholder="이번 글에만 적용할 요청사항" className="w-full rounded-xl border p-3 text-sm"/>}
-      <div className="flex gap-2"><button onClick={()=>setStep(1)} className="rounded-xl border px-4 py-3 text-sm">← 이전</button><button onClick={()=>setStep(3)} className="rounded-xl bg-[#665174] px-5 py-3 text-sm text-white">원고 생성 →</button></div>
-      <p className="text-[10px] leading-5 text-[#A49AA9]">현재 이 버전에는 외부 AI 조사·작성 API가 아직 연결되지 않았습니다. 실제 검색·출처 검증·AI 원고 생성이 연결되기 전에는 생성 완료나 검증 완료로 표시하지 않습니다.</p>
+      <div className="flex flex-wrap gap-2"><button onClick={()=>setStep(1)} disabled={generating} className="rounded-xl border px-4 py-3 text-sm disabled:opacity-50">← 이전</button><button onClick={()=>void sendToChatGPT()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl border border-[#665174] px-4 py-3 text-sm font-semibold text-[#665174] disabled:opacity-50">ChatGPT로 보내기</button><button onClick={()=>void generateWithGemini()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl border border-[#4285F4] px-4 py-3 text-sm font-semibold text-[#3367D6] disabled:opacity-50">Gemini로 작성</button><button onClick={()=>void generateDraft()} disabled={generating || !keyword.trim() || !notes.trim()} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">{generating ? "AI가 원고를 작성하고 있어요..." : "OpenAI API로 작성"}</button></div>{externalStatus && <p role="status" className="rounded-lg bg-[#F5F1F6] p-3 text-xs leading-5 text-[#665174]">{externalStatus}</p>}{externalPrompt && <textarea readOnly value={externalPrompt} rows={8} className="w-full rounded-xl border p-3 text-xs leading-5" onFocus={e=>e.currentTarget.select()}/>}
+      {generationError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs leading-5 text-rose-700">{generationError}</p>}
+      <p className="text-[10px] leading-5 text-[#A49AA9]">입력한 경험과 자료를 바탕으로 AI 초안을 생성합니다. 사진 자체를 분석하는 기능과 외부 자료의 실시간 사실 확인은 아직 포함되지 않습니다. 가격·주소·운영시간 등은 발행 전에 공식 출처로 확인해 주세요.</p>
     </div>}
     {step===3 && <div className="rounded-2xl border bg-white p-5 md:p-6">
-      <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">통합 원고 편집기</h3><p className="mt-1 text-xs text-[#918995]">제목과 본문을 한 화면에서 직접 수정합니다. 외부 AI 조사·원고 생성은 아직 연결되지 않았습니다.</p></div><button onClick={()=>setStep(2)} className="text-xs text-[#665174]">← 입력 수정</button></div>
+      <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">통합 원고 편집기</h3><p className="mt-1 text-xs text-[#918995]">AI가 생성한 초안을 제목과 본문 한 화면에서 직접 수정합니다.</p></div><button onClick={()=>setStep(2)} className="text-xs text-[#665174]">← 입력 수정</button></div>
       <div className="mt-4"><p className="mb-1 text-xs font-semibold">제목 구성 예시</p><p className="mb-2 text-[10px] text-[#A49AA9]">키워드와 글 유형을 바탕으로 만든 문장 예시입니다. AI 조사·분석 결과는 아닙니다.</p><div className="space-y-2">{titleIdeas.map((x,i)=><button key={x} onClick={()=>setTitle(x)} className={`block w-full rounded-lg border p-3 text-left text-xs leading-5 ${title===x?"border-[#8D789C] bg-[#F7F3F9]":"border-[#ECE8EA]"}`}>{i+1}. {x}</button>)}</div><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="직접 제목 입력" className="mt-3 w-full rounded-xl border p-3 text-sm"/></div>
-      <label className="mt-4 block text-xs font-semibold">본문<textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={20} placeholder="조사한 자료나 직접 작성한 내용을 붙여넣고 편집하세요. AI 조사·원고 생성 기능은 아직 연결되지 않았습니다." className="mt-2 w-full rounded-xl border p-4 text-sm leading-7 font-normal"/></label>
+      <label className="mt-4 block text-xs font-semibold">본문<textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={20} placeholder="AI가 생성한 초안을 검토하고, 사실관계와 표현을 직접 수정하세요." className="mt-2 w-full rounded-xl border p-4 text-sm leading-7 font-normal"/></label>
       <div className="mt-4 rounded-xl bg-[#F8F5F9] p-4"><p className="text-xs font-semibold text-[#665174]">발행 전 직접 확인할 항목</p><ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-[#817787]"><li>핵심 키워드와 검색 의도에 답하고 있는가</li><li>주소·가격·영업시간 등 변동 정보의 출처와 확인일을 표시했는가</li><li>실제 경험과 외부에서 확인한 사실을 구분했는가</li><li>연관 표현이 자연스럽고 반복이 과도하지 않은가</li><li>사진 설명과 문단 구성이 독자의 이해를 돕는가</li></ul></div>
       <label className="mt-4 block text-xs text-[#817787]">발행 예정일<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-2 w-full rounded-xl border p-3 text-sm"/></label>
       <div className="mt-5 flex flex-wrap gap-2"><button onClick={()=>save("원고 작성")} className="rounded-xl border px-4 py-3 text-sm">임시 저장</button><button onClick={()=>save("발행 준비")} className="rounded-xl bg-[#665174] px-4 py-3 text-sm text-white">발행 준비 저장</button><button onClick={()=>navigator.clipboard?.writeText(draft)} className="rounded-xl border px-4 py-3 text-sm">본문 복사</button><a href="https://blog.naver.com/" target="_blank" rel="noreferrer" className="rounded-xl border px-4 py-3 text-sm">네이버 블로그 열기</a></div>
