@@ -63,7 +63,7 @@ export default function WritingStudio({ initialKeyword = "", initialCategory, in
       const d = JSON.parse(initialData);
       setKeyword(d.keyword || initialKeyword);
       setTitle(d.title || d.keyword || initialKeyword);
-      setCategory(d.category || initialCategory || detect(d.keyword || initialKeyword));
+      setCategory((d.category === "쇼핑·제품" ? "리빙·제품" : d.category) || initialCategory || detect(d.keyword || initialKeyword));
       setPurpose(d.purpose === "직접 경험·방문 후기" ? "실사용 후기" : d.purpose === "비교·분석" ? "비교" : d.purpose === "문제 해결·노하우" ? "문제 해결" : "정보");
       setDate(d.date || today());
       setNotes(d.notes || Object.values(d.values || {}).filter(Boolean).join("\n"));
