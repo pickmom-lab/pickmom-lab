@@ -289,7 +289,7 @@ export default function Home() {
                       "사진 계획: 대표 이미지 1장(공식 출처), 장소·제품의 세부 사진 2~3장, 비교 항목을 설명하는 사진 1장. 사진마다 원본 게시물 URL과 이용 허락 여부를 확인하고, 무단 다운로드·재사용은 하지 마세요.",
                       "사진 삽입 위치: 제목 아래 대표 사진 → 업체/장소 소개 문단 아래 외관·대표 이미지 → 메뉴·시설·제품 비교 문단 아래 세부 사진 → 비교 요약 아래 보충 사진.",
                       "사용자가 직접 경험한 내용은 별도 메모로 추가하고, 확인된 사실과 추정·의견을 구분해 작성하세요."
-                    ].join("\\n");
+                    ].join("\n");
                     const search = encodeURIComponent(idea.keyword + " 공식 홈페이지 인스타그램 사진");
                     const images = encodeURIComponent(idea.keyword + " 공식");
                     return <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
