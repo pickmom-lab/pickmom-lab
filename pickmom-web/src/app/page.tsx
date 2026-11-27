@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import CompetitorAnalysis from "./components/competitor-analysis";
 import PopularPostTemplates from "./components/popular-post-templates";
+import WritingStudio from "./components/writing-studio";
 
 type Category = "리빙·제품" | "맛집·카페" | "여행·체험" | "교육 정보" | "부동산·주거" | "생활·정책";
 type Purpose = "경험 리뷰" | "비교·분석" | "정보 제공" | "문제 해결" | "추천·판매";
@@ -18,6 +19,7 @@ type Post = {
   draft: string;
   url?: string;
   photos?: string[];
+  formData?: string;
 };
 type DraftInput = {
   topic: string;
@@ -275,60 +277,28 @@ export default function Home() {
           {page === "templates" && <PopularPostTemplates />}
 
           {page === "writing" && (
-            <section className="mx-auto max-w-4xl space-y-5">
-              <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div><p className="text-xs font-semibold text-[#80678F]">BLOG WRITING FLOW</p><h2 className="mt-1 text-lg font-semibold">키워드에서 발행까지</h2></div>
-                  <span className="text-xs text-[#918995]">STEP {writingStep} / 3</span>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {(["주제·분류", "경험·자료", "원고·발행"] as const).map((label,i)=><button key={label} onClick={()=>setWritingStep((i+1) as 1|2|3)} className={`rounded-lg px-2 py-2.5 text-xs font-semibold ${writingStep===i+1?"bg-[#665174] text-white":"bg-[#F5F1F6] text-[#80678F]"}`}>{i+1}. {label}</button>)}
-                </div>
-              </div>
-
-              {writingStep === 1 && <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
-                <h3 className="font-semibold">1. 키워드와 콘텐츠 유형 확인</h3>
-                <p className="mt-1 text-xs leading-5 text-[#918995]">키워드를 바탕으로 분야와 글의 목적을 먼저 분류했어요. 필요하면 직접 수정할 수 있습니다.</p>
-                <label className="mt-4 block text-xs text-[#817787]">핵심 키워드<input value={draftInput.keyword} onChange={e=>setDraftInput({...draftInput,keyword:e.target.value,category:inferCategory(e.target.value)})} placeholder="분석한 키워드" className="mt-2 w-full rounded-xl border border-[#EAE6E8] p-3 text-sm"/></label>
-                <label className="mt-4 block text-xs text-[#817787]">콘텐츠 분야<select value={draftInput.category} onChange={e=>setDraftInput({...draftInput,category:e.target.value as Category})} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-white p-3 text-sm">{categories.map(c=><option key={c}>{c}</option>)}</select></label>
-                <label className="mt-4 block text-xs text-[#817787]">글의 목적<select value={draftInput.purpose} onChange={e=>setDraftInput({...draftInput,purpose:e.target.value as Purpose})} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-white p-3 text-sm">{purposes.map(p=><option key={p}>{p}</option>)}</select></label>
-                <label className="mt-4 block text-xs text-[#817787]">글 주제 / 임시 제목<input value={draftInput.topic} onChange={e=>setDraftInput({...draftInput,topic:e.target.value})} placeholder="키워드를 바탕으로 쓸 글의 주제" className="mt-2 w-full rounded-xl border border-[#EAE6E8] p-3 text-sm"/></label>
-                <div className="mt-5 flex justify-end"><button onClick={()=>setWritingStep(2)} disabled={!draftInput.keyword.trim()&&!draftInput.topic.trim()} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">다음: 작성 방식 선택 →</button></div>
-              </div>}
-
-              {writingStep === 2 && <div className="space-y-5">
-                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
-                  <h3 className="font-semibold">2. 어떤 방식으로 작성할까요?</h3>
-                  <p className="mt-1 text-xs leading-5 text-[#918995]">선택한 목적에 맞춰 입력 항목이 달라집니다. 직접 경험이 없는 정보형 글이라면 확인 가능한 자료 중심으로 작성하세요.</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {purposes.map(p=><button key={p} onClick={()=>setDraftInput({...draftInput,purpose:p})} className={`rounded-xl border p-4 text-left ${draftInput.purpose===p?"border-[#8D789C] bg-[#F7F3F9]":"border-[#ECE8EA]"}`}><span className="text-sm font-semibold">{p}</span><span className="mt-1 block text-xs leading-5 text-[#918995]">{p==="경험 리뷰"?"직접 방문·구매·사용한 과정과 솔직한 평가":p==="비교·분석"?"여러 선택지의 기준·차이·장단점":p==="정보 제공"?"일정·위치·가격·조건 등 확인된 사실":p==="문제 해결"?"독자의 문제와 해결 절차·주의사항":"추천 대상·선택 이유·구매 또는 이용 판단 기준"}</span></button>)}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
-                  <h3 className="font-semibold">3. 내용과 사진 입력</h3>
-                  <p className="mt-1 text-xs text-[#918995]">{draftInput.category} · {draftInput.purpose}에 맞춘 입력 단계입니다.</p>
-                  <label className="mt-4 block text-xs text-[#817787]">{draftInput.purpose==="경험 리뷰"?"직접 경험한 과정과 느낌":draftInput.purpose==="비교·분석"?"비교할 대상과 항목":draftInput.purpose==="정보 제공"?"전달할 핵심 정보와 확인 출처":draftInput.purpose==="문제 해결"?"독자가 겪는 문제와 해결 과정":"추천 대상과 추천·비추천 이유"}
-                    <textarea value={draftInput.notes} onChange={e=>setDraftInput({...draftInput,notes:e.target.value})} rows={7} placeholder={draftInput.category==="맛집·카페"?"방문 시점, 주문 메뉴, 맛과 양, 가격, 대기, 주차, 공간, 좋았던 점과 아쉬운 점을 적어 주세요.":draftInput.category==="여행·체험"?"방문 날짜, 동선, 예약, 이용 요금, 아이 연령별 반응, 편의시설, 주차와 실제 팁을 적어 주세요.":draftInput.category==="교육 정보"?"대상 연령, 교육기관·교재·수업 정보, 아이 반응, 확인한 기준과 출처를 적어 주세요.":"핵심 내용, 실제 상황, 판단 기준, 장단점과 독자에게 필요한 팁을 적어 주세요."} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm leading-6"/></label>
-                  <label className="mt-4 block text-xs text-[#817787]">추가 조사 자료 / 공식 출처 / 참고 링크<textarea value={draftInput.research} onChange={e=>setDraftInput({...draftInput,research:e.target.value})} rows={4} placeholder="가격, 운영시간, 주소, 예약 조건, 제품 사양 등 확인한 자료와 출처를 입력해 주세요." className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm leading-6"/></label>
-                  <div className="mt-4">
-                    <label className="block text-xs font-medium text-[#817787]">사진 첨부</label>
-                    <p className="mt-1 text-[11px] text-[#A49AA9]">직접 촬영한 사진을 여러 장 선택할 수 있어요. 사진은 현재 브라우저에 저장됩니다.</p>
-                    <input type="file" accept="image/*" multiple onChange={e=>{const files=Array.from(e.target.files||[]);files.forEach(file=>{const reader=new FileReader();reader.onload=()=>{if(typeof reader.result==="string")setPhotos(old=>[...old,reader.result as string]);};reader.readAsDataURL(file);});e.currentTarget.value="";}} className="mt-2 block w-full rounded-xl border border-dashed border-[#CFC3D7] bg-[#FCFBFC] p-3 text-xs"/>
-                    {photos.length>0&&<div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">{photos.map((src,i)=><div key={i} className="relative"><img src={src} alt={`첨부 사진 ${i+1}`} className="h-24 w-full rounded-lg object-cover"/><button onClick={()=>setPhotos(old=>old.filter((_,idx)=>idx!==i))} className="absolute right-1 top-1 rounded-full bg-black/65 px-2 py-1 text-[10px] text-white">삭제</button></div>)}</div>}
-                  </div>
-                </div>
-                <div className="flex flex-wrap justify-between gap-2"><button onClick={()=>setWritingStep(1)} className="rounded-xl border border-[#EAE6E8] bg-white px-5 py-3 text-sm text-[#716777]">← 이전</button><button onClick={()=>{setAngle(draftInput.purpose==="비교·분석"?"비교 중심":draftInput.purpose==="정보 제공"?"정보 중심":draftInput.purpose==="문제 해결"?"문제 해결 중심":draftInput.purpose==="추천·판매"?"추천 중심":"경험 중심");setDraft(makeDraft(draftInput,draftInput.purpose));setWritingStep(3);}} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white">입력 내용으로 원고 구성 →</button></div>
-              </div>}
-
-              {writingStep === 3 && <div className="rounded-2xl border border-[#ECE8EA] bg-white p-5 md:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-semibold">4. 원고 확인 및 발행 준비</h3><p className="mt-1 text-xs text-[#918995]">{draftInput.category} · {draftInput.purpose} · 사진 {photos.length}장</p></div><button onClick={()=>setWritingStep(2)} className="rounded-lg border border-[#EAE6E8] px-3 py-2 text-xs text-[#665174]">입력 내용 수정</button></div>
-                <p className="mt-3 rounded-xl bg-[#F8F5F9] p-3 text-xs leading-5 text-[#817787]">초안은 입력한 내용을 정리한 편집용 구조입니다. 확인되지 않은 사실은 직접 검증해 주세요. 현재 네이버 블로그 자동 발행은 연결되어 있지 않습니다.</p>
-                <textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={24} className="mt-4 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-4 text-sm leading-7"/>
-                <label className="mt-4 block text-xs text-[#817787]">예정 발행일<input type="date" value={scheduleDate} onChange={e=>setScheduleDate(e.target.value)} className="mt-2 w-full rounded-xl border border-[#EAE6E8] bg-[#FCFBFC] p-3 text-sm"/></label>
-                <div className="mt-5 flex flex-col gap-2 sm:flex-row"><button onClick={()=>savePost("발행 준비")} className="rounded-xl bg-[#665174] px-5 py-3 text-sm font-semibold text-white">발행 준비 저장</button><button onClick={()=>savePost("원고 작성")} className="rounded-xl border border-[#EAE6E8] px-5 py-3 text-sm text-[#716777]">임시 원고 저장</button><button onClick={()=>navigator.clipboard?.writeText(draft)} className="rounded-xl border border-[#EAE6E8] px-5 py-3 text-sm text-[#716777]">본문 복사</button></div>
-                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">네이버에 직접 발행한 뒤 캘린더에서 상태를 ‘발행 완료’로 변경할 수 있습니다.</p>
-              </div>}
-            </section>
+            <WritingStudio
+              key={editingId ?? "new"}
+              initialKeyword={draftInput.keyword}
+              initialData={editingId ? posts.find((post) => post.id === editingId)?.formData : undefined}
+              onSave={(value) => {
+                const saved: Post = {
+                  id: editingId ?? Date.now(),
+                  title: value.title,
+                  keyword: value.keyword,
+                  category: value.category as Category,
+                  purpose: value.purpose as Purpose,
+                  date: value.date,
+                  status: value.status,
+                  draft: value.draft,
+                  photos: value.photos,
+                  formData: value.formData,
+                };
+                setPosts((old) => editingId ? old.map((post) => post.id === editingId ? saved : post) : [saved, ...old]);
+                setEditingId(null);
+                setPage("calendar");
+              }}
+            />
           )}
 
           {page === "calendar" && (
