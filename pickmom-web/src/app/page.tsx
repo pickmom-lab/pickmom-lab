@@ -280,41 +280,41 @@ export default function Home() {
                 {visibleIdeas.length === 0 ? <div className="rounded-2xl border border-dashed border-[#DED6E3] bg-white p-8 text-center text-sm text-[#918995]">관심 카테고리를 하나 이상 선택하면 관련 글감이 여기에 보여요.</div> :
                 <div className="grid gap-3 lg:grid-cols-2">
                   {visibleIdeas.map((idea, i) => {
+                    const comparisonPlan = idea.keyword === "주방 수납용품 추천"
+                      ? "비교 대상: 서랍 칸막이형 vs 적층 수납함 vs 벽면·걸이형 수납. 기준: 설치 공간·실측 크기, 용량, 소재·내구성, 세척 편의성, 가격대, 주방 동선. 마지막에는 주방 크기와 보관 물건별 적합한 유형을 정리합니다."
+                      : idea.keyword === "서울 머랭롤 맛집"
+                      ? "비교 대상: 서울에서 현재 판매가 확인되는 매장 3~5곳. 기준: 판매 지점·판매 여부, 메뉴 종류·크기·구성, 확인 가능한 가격, 현장/예약/택배 구매 방식, 품절·판매 일정, 최근 후기의 맛·식감. 파블로바 케이크와는 머랭 식감·크림·과일 구성으로 구분합니다. 판매 여부가 확인되지 않은 매장은 제외합니다."
+                      : idea.keyword === "서울 겨울 실내 체험"
+                      ? "비교 대상: 어린이 박물관·전시형 체험, 만들기 공방, 실내 놀이시설 등 3~5곳. 기준: 권장 연령, 실제 체험 시간, 운영 요일·회차, 이용료와 보호자 비용, 예약·취소 조건, 주차, 아이의 직접 참여 정도. 형제자매 동반 시 연령별 적합성도 구분합니다."
+                      : idea.keyword === "초등 입학 전 학습 준비"
+                      ? "비교 대상: 가정 학습 vs 기관·학원 학습, 영역별 준비 방식. 기준: 초등 교육과정 연계, 혼자 수행 가능한 정도, 주당 소요 시간, 비용, 피드백 방식, 학습 부담. 영어는 파닉스·리딩·쓰기, 수학은 교과 기본·연산·사고력으로 나누고 특정 방식이 우월하다고 단정하지 않습니다."
+                      : idea.keyword === "이사 전 주거 비용"
+                      ? "비교 대상: 전세 vs 월세 또는 기존 집 vs 이사 후보 주택. 기준: 보증금·월세, 관리비 포함 항목, 중개보수, 이사비, 대출 이자, 수선·주차 등 반복 비용. 초기 비용과 월 고정비를 분리해 총비용 관점으로 비교합니다."
+                      : "독자가 실제로 선택해야 하는 대표 유형 2~4개를 비교 대상으로 정합니다. 가격뿐 아니라 이용 조건, 대상·규격, 편의성, 유지 비용, 장단점으로 기준을 통일하고 공식 근거를 확인합니다.";
                     const researchBrief = [
-                      "[PICKMOM LAB 사전 조사 방향]",
-                      "콘텐츠 유형: 직접 방문 후기가 아닌 정보·비교형으로 시작합니다. 실제 경험이 없는 내용은 방문한 것처럼 쓰지 마세요.",
-                      `추천 이유: ${idea.why}`,
-                      `조사할 항목: ${idea.category === "맛집·카페" ? "현재 판매 여부, 대표 메뉴와 가격, 지점·주소, 영업시간, 실제 후기의 공통점과 차이" : idea.category === "여행·체험" ? "운영 기간·요일, 연령 제한, 예약 방법, 이용료, 주차, 실내 시설과 체험 내용" : idea.category === "교육 정보" ? "공식 교육자료, 대상 연령, 준비 시기, 학습 방식별 장단점, 근거가 되는 기관 자료" : "공식 제품·기관 정보, 가격과 조건, 비교 기준, 장단점, 업데이트 날짜"}`,
-                      "자료 검증: 변동 정보는 공식 홈페이지·공식 SNS·기관 공지를 우선 확인하고, 출처 URL과 확인 날짜를 기록하세요. 검색량이나 문서 수를 확인하지 못했다면 수치로 표현하지 마세요.",
-                      "사진 계획: 대표 이미지 1장(공식 출처), 장소·제품의 세부 사진 2~3장, 비교 항목을 설명하는 사진 1장. 사진마다 원본 게시물 URL과 이용 허락 여부를 확인하고, 무단 다운로드·재사용은 하지 마세요.",
-                      "사진 삽입 위치: 제목 아래 대표 사진 → 업체/장소 소개 문단 아래 외관·대표 이미지 → 메뉴·시설·제품 비교 문단 아래 세부 사진 → 비교 요약 아래 보충 사진.",
-                      "사용자가 직접 경험한 내용은 별도 메모로 추가하고, 확인된 사실과 추정·의견을 구분해 작성하세요."
-                    ].join("\n");
-                    const search = encodeURIComponent(idea.keyword + " 공식 홈페이지");
-                    const photoSearch = encodeURIComponent(idea.keyword);
-                    const instagramSearch = encodeURIComponent(`site:instagram.com ${idea.keyword} 공식`);
-                    return <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
+                      "[글쓰기 단계에 전달할 조사·구성 제안]",
+                      "주제: " + idea.title,
+                      "핵심 키워드: " + idea.keyword,
+                      "콘텐츠 유형: " + idea.purpose,
+                      "추천 이유: " + idea.why,
+                      idea.purpose === "비교·분석" ? "비교 기획: " + comparisonPlan : idea.purpose === "문제 해결" ? "구성 제안: 독자가 겪는 상황 → 원인 또는 선택이 어려운 지점 → 실행 순서 → 준비물·주의사항 순서로 작성합니다. 비용·효과를 단정하지 말고 공식 기준과 개인차를 구분합니다." : "구성 제안: 독자가 먼저 궁금해할 질문 3~5개를 소제목으로 만들고 핵심 답변 → 세부 조건 → 예외·주의사항 순서로 정리합니다.",
+                      "필수 조사 항목: " + (idea.category === "맛집·카페" ? "현재 판매 여부, 지점별 판매 메뉴와 가격, 주소·영업시간, 구매·예약 방법, 최근 후기의 공통점과 차이" : idea.category === "여행·체험" ? "운영 기간·요일, 권장/제한 연령, 회차와 체험 시간, 예약·취소 조건, 이용료, 주차와 보호자 비용" : idea.category === "교육 정보" ? "공식 교육자료, 대상 연령, 준비 시기, 학습 방식별 목표와 한계, 가정에서 확인할 체크포인트" : idea.category === "생활·정책" ? "담당 기관의 최신 공지, 신청 대상, 신청 기간, 지원 내용, 제외 조건과 신청 절차" : "공식 제품·기관 정보, 가격과 추가 비용, 규격·이용 조건, 유지·관리 방법, 장단점"),
+                      "자료 수집 조건: 검색 결과 링크를 본문에 나열하지 않습니다. 공식 홈페이지·공식 SNS·기관 공지와 신뢰할 수 있는 후기를 조사 근거로 사용하고, 출처 URL과 확인 날짜는 글쓰기 참고 메모로만 활용합니다. 가격·운영시간·판매 여부 등 변동 정보는 최신 여부를 확인하고, 확인되지 않으면 미확인으로 표시합니다.",
+                      "사진 조건: 사진 링크나 라이선스 안내를 추천 카드에 노출하지 않습니다. 실제 글에 사용할 사진은 사용자가 직접 첨부한 사진을 우선하고, 외부 사진은 사용 허가와 개별 라이선스를 확인한 경우에만 사용합니다.",
+                      "원고 구성: 제목 아래 핵심 요약 → 선택 기준 또는 핵심 정보 → 항목별 상세 내용 → 비교표/체크리스트(적합한 경우) → 장단점과 추천 대상 → 최신 정보 확인일 순서로 구성합니다.",
+                      "주의: 실제 방문·구매·사용 경험을 만들어 쓰지 말고, 확인된 사실·후기에서 확인한 경향·편집자의 해석을 구분합니다."
+                    ].join("\\n");
+                     return <article key={idea.keyword} className="rounded-2xl border border-[#ECE8EA] bg-white p-5">
                       <div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#8B7898]">추천 {String(i + 1).padStart(2, "0")} · {idea.category}</span><span className="rounded-full bg-[#F5F1F6] px-2.5 py-1 text-[10px] text-[#715B80]">{idea.purpose}</span></div>
                       <h3 className="mt-3 text-sm font-semibold leading-6">{idea.title}</h3>
                       <p className="mt-2 text-xs text-[#918995]">핵심 키워드 · {idea.keyword}</p>
                       <p className="mt-3 text-xs leading-5 text-[#817787]">{idea.why}</p>
                       <div className="mt-4 rounded-xl bg-[#F8F5F9] p-3"><p className="text-xs font-semibold text-[#665174]">이 글에서 조사할 것</p><p className="mt-1 text-xs leading-5 text-[#817787]">{idea.category === "맛집·카페" ? "판매 여부 · 메뉴/가격 · 매장 정보 · 실제 후기 비교" : idea.category === "여행·체험" ? "운영 기간 · 연령 · 예약 · 이용료 · 주차" : idea.category === "교육 정보" ? "공식 교육자료 · 대상 연령 · 학습 방식 · 준비 시기" : "공식 정보 · 가격/조건 · 비교 기준 · 장단점"}</p></div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <a href={`https://www.google.com/search?q=${search}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">공식 홈페이지 ↗</a>
-                        <a href={`https://www.google.com/search?q=${instagramSearch}`} target="_blank" rel="noreferrer" className="rounded-lg border border-[#D8C9E5] bg-[#F8F5FA] px-3 py-2 text-xs font-semibold text-[#665174]">인스타 공식 게시물 보기 ↗</a>
-                        <a href={`https://www.pexels.com/search/${photoSearch}/`} target="_blank" rel="noreferrer" className="rounded-lg border border-[#D8C9E5] bg-[#F8F5FA] px-3 py-2 text-xs font-semibold text-[#665174]">Pexels 무료 사용 사진 ↗</a>
-                        <a href={`https://unsplash.com/s/photos/${photoSearch}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">Unsplash 무료 사용 사진 ↗</a>
-                        <a href="https://www.pexels.com/license/" target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">Pexels 이용 조건 ↗</a>
-                        <a href="https://unsplash.com/license" target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">Unsplash 이용 조건 ↗</a>
-                        <a href={`https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(idea.keyword)}`} target="_blank" rel="noreferrer" className="rounded-lg border px-3 py-2 text-xs text-[#665174]">블로그 후기 확인 ↗</a>
-                      </div>
-                      <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose, researchBrief)} className="mt-4 rounded-lg bg-[#665174] px-3 py-2.5 text-xs font-semibold text-white">조사 방향을 담아 글쓰기 →</button>
-                      <button onClick={() => setSelectedIdea((old) => old === idea.keyword ? null : idea.keyword)} className="ml-2 mt-4 rounded-lg border px-3 py-2.5 text-xs text-[#665174]">{selectedIdea === idea.keyword ? "사진 배치 안내 닫기" : "사진 배치 안내"}</button>
-                      {selectedIdea === idea.keyword && <div className="mt-3 rounded-xl border border-[#ECE8EA] p-3 text-xs leading-6 text-[#817787]"><b>권장 사진 순서</b><ol className="ml-4 list-decimal"><li>제목 아래: 주제를 대표하는 공식 사진</li><li>첫 번째 정보 문단 아래: 장소·제품의 전체 모습</li><li>세부 비교 문단 아래: 메뉴·시설·제품 디테일</li><li>비교 요약 아래: 차이를 보여주는 보충 사진</li></ol><p className="mt-2">Pexels·Unsplash에서 무료 사용 라이선스가 적용되는 사진을 우선 사용하고, 사진별 제한·상표·인물 초상권 등 별도 권리가 있는지 확인하세요. 별도 허락이 필요한 공식 SNS 사진은 사용 대상에서 제외합니다.</p></div>}
+                      <button onClick={() => startWriting(idea.title, idea.keyword, idea.category, idea.purpose, researchBrief)} className="mt-4 w-full rounded-lg bg-[#665174] px-3 py-3 text-xs font-semibold text-white">이 주제로 글쓰기 →</button>
                     </article>;
                   })}
                 </div>}
-                <p className="mt-3 text-[10px] leading-5 text-[#A49AA9]">※ 현재 추천은 카테고리 기반 편집 제안입니다. 실시간 검색량·경쟁도 검증이나 사진 원본 수집과 라이선스 자동 판별은 아직 자동화되지 않았으며, Pexels·Unsplash의 무료 사용 사진 검색 경로를 제공합니다. 각 사진의 이용 조건은 원본 페이지에서 확인해야 합니다.</p>
+
               </section>
 
               <section className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
